@@ -8,7 +8,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::fs::OpenOptions;
 
-const CHUNK_SIZE: usize = 100000;
+const CHUNK_SIZE: usize = 200000;
 #[derive(Parser, Debug)]
 #[command(name = "reddit-search")]
 #[command(author = "Luc Aggett (luc@aggett.com)")]
@@ -67,13 +67,12 @@ fn main() -> std::io::Result<()> {
     //println!("{:?}", args.fields);
     let mut field_map: HashMap<String, String> = HashMap::new();
     for field in args.fields {
-        let mut split = field.split(":");
+        let mut split = field.split(std::char::from_u32(61).unwrap());
         let field = split.next().unwrap().to_string();
         let value = split.next().unwrap().to_string();
         if field_map.contains_key(&field) {
-            println!("{} already exists in field map, adding {} to existing value", field, value);
-            let existing_value = field_map.get(&field.clone()).unwrap().to_string();
-            field_map.insert(field.clone(), format!("{}|{}", existing_value, value));
+            // if the field already exists, raise an error since we don't support multiple values for the same field
+            panic!("Field {} is used twice, multiple values for the same field are not supported", field);
         }
         else {
             field_map.insert(field, value);
@@ -117,7 +116,7 @@ fn main() -> std::io::Result<()> {
     let estimated_num_lines = ((metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0) as u64;
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::default_spinner()
-        .template("[{elapsed_precise}] {pos} lines processed (~{msg}%)").expect("Failed to set progress bar style")
+        .template("[{elapsed_precise}] {pos} lines processed ({msg})").expect("Failed to set progress bar style")
         .tick_chars("-/||\\-"));
     for chunk in rx {
         let matches = process_chunk(chunk, &field_map);
@@ -127,15 +126,21 @@ fn main() -> std::io::Result<()> {
         for line in matches {
             writeln!(output_stream, "{}", line)?;
         }
-        if total_lines % 100_000 == 0 {
-            pb.set_position(total_lines as u64); // Update progress bar with lines processed
-            pb.set_message(format!("{:.2}", (total_lines as f64 / estimated_num_lines as f64) * 100.0));
+
+        pb.set_position(total_lines as u64); // Update progress bar with lines processed
+        let percent = (total_lines as f64 / estimated_num_lines as f64) * 100.0;
+        if percent < 98.0 {
+            pb.set_message(format!("~{:.0}%", percent));
         }
+        else {
+            pb.set_message("Please wait...");
+        }
+
     }
 
-    pb.finish_with_message("100");
+    pb.finish_with_message("Done!");
     println!("Matched {} lines out of {}", matched_lines_count, total_lines);
-    if matched_lines_count == 0 {
+    if matched_lines_count == 0 && !args.append {
         println!("No matches found, deleting output file");
         std::fs::remove_file(output_path)?;
     }
