@@ -27,6 +27,7 @@ struct Args {
     verbose: bool,
     #[arg(short, long, default_value = "false")]
     append: bool,
+
 }
 
 fn process_line(line: String, field_map: &HashMap<String, String>) -> Option<String> {
@@ -60,8 +61,8 @@ fn main() -> std::io::Result<()> {
     let output_path = PathBuf::from(&args.output);
     let output_file = OpenOptions::new()
         .create(true)
-        .append(args.append)
         .write(true)
+        .append(args.append)
         .open(output_path.clone())?;
     let mut output_stream = BufWriter::new(output_file);
     //println!("{:?}", args.fields);
@@ -79,15 +80,6 @@ fn main() -> std::io::Result<()> {
             field_map.insert(field, value);
         }
     }
-    //println!("{:?} {:?}", field_map, field_map.len());
-    // if field_map.len() == 1 {
-    //     println!("Fetching all comments with {} = {} from {}", field_map.keys().next().unwrap(), field_map.values().next().unwrap(), input_path);
-    // } else {
-    //     println!("Fetching all comments with the following fields from {}", input_path);
-    //     for (field, value) in field_map.iter() {
-    //         println!("{} = {}", field, value);
-    //     }
-    // }
 
     println!("Starting reddit-search for {} ({} threads)", input_path.display(), rayon::current_num_threads());
 
