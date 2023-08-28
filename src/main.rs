@@ -3,12 +3,13 @@ use std::path::PathBuf;
 use zstd::Decoder;
 use std::io::{BufRead, BufReader, Write, BufWriter};
 use clap::{command, Parser};
-use std::collections::HashMap;
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::fs::OpenOptions;
 
-const CHUNK_SIZE: usize = 200000;
+
+
+const CHUNK_SIZE: usize = 500_000;
 #[derive(Parser, Debug)]
 #[command(name = "reddit-search")]
 #[command(author = "Luc Aggett (luc@aggett.com)")]
@@ -30,10 +31,9 @@ struct Args {
 
 }
 
-fn process_line(line: String, field_map: &HashMap<String, String>) -> Option<String> {
-    if field_map.iter().all(|(field, value)| {
-        // If the line contains the field and value in the format "field":"value" or "field":value, then return the line
-        line.contains(&format!("\"{}\":\"{}\"", field, value)) || line.contains(&format!("\"{}\":{}", field, value))
+fn process_line(line: String, search_strings: &Vec<Vec<String>>) -> Option<String> {
+    if search_strings.iter().all(|formats| {
+        formats.iter().any(|format| line.contains(format))
     }) {
         Some(line)
     } else {
@@ -41,9 +41,9 @@ fn process_line(line: String, field_map: &HashMap<String, String>) -> Option<Str
     }
 }
 
-fn process_chunk(lines: Vec<String>, field_map: &HashMap<String, String>) -> Vec<String> {
+fn process_chunk(lines: Vec<String>, search_strings: &Vec<Vec<String>>) -> Vec<String> {
     lines.into_par_iter()
-        .filter_map(|line| process_line(line, field_map))
+        .filter_map(|line| process_line(line, &search_strings))
         .collect()
 }
 
@@ -66,19 +66,18 @@ fn main() -> std::io::Result<()> {
         .open(output_path.clone())?;
     let mut output_stream = BufWriter::new(output_file);
     //println!("{:?}", args.fields);
-    let mut field_map: HashMap<String, String> = HashMap::new();
+    let mut search_strings: Vec<Vec<String>> = Vec::new();
     for field in args.fields {
-        let mut split = field.split(std::char::from_u32(61).unwrap());
-        let field = split.next().unwrap().to_string();
+        let mut split = field.split(":");
+        let field_key = split.next().unwrap().to_string();
         let value = split.next().unwrap().to_string();
-        if field_map.contains_key(&field) {
-            // if the field already exists, raise an error since we don't support multiple values for the same field
-            panic!("Field {} is used twice, multiple values for the same field are not supported", field);
-        }
-        else {
-            field_map.insert(field, value);
-        }
+        let formats = vec![
+            format!("\"{}\":\"{}\"", field_key, value),
+            format!("\"{}\":{}", field_key, value)
+        ];
+        search_strings.push(formats);
     }
+
 
     println!("Starting reddit-search for {} ({} threads)", input_path.display(), rayon::current_num_threads());
 
@@ -110,8 +109,10 @@ fn main() -> std::io::Result<()> {
     pb.set_style(ProgressStyle::default_spinner()
         .template("[{elapsed_precise}] {pos} lines processed ({msg})").expect("Failed to set progress bar style")
         .tick_chars("-/||\\-"));
+
+
     for chunk in rx {
-        let matches = process_chunk(chunk, &field_map);
+        let matches = process_chunk(chunk, &search_strings);
         matched_lines_count += matches.len();
         total_lines += CHUNK_SIZE;
 
@@ -119,15 +120,15 @@ fn main() -> std::io::Result<()> {
             writeln!(output_stream, "{}", line)?;
         }
 
-        pb.set_position(total_lines as u64); // Update progress bar with lines processed
-        let percent = (total_lines as f64 / estimated_num_lines as f64) * 100.0;
-        if percent < 98.0 {
-            pb.set_message(format!("~{:.0}%", percent));
+        if total_lines % 1_000_000 == 0 {
+            pb.set_position(total_lines as u64); // Update progress bar with lines processed
+            let percent = (total_lines as f64 / estimated_num_lines as f64) * 100.0;
+            if percent < 98.0 {
+                pb.set_message(format!("~{:.0}%", percent));
+            } else {
+                pb.set_message("Please wait...");
+            }
         }
-        else {
-            pb.set_message("Please wait...");
-        }
-
     }
 
     pb.finish_with_message("Done!");
