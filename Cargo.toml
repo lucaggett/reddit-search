@@ -15,7 +15,7 @@ serde_json = "1.0.67"
 chrono = "0.4.19"
 csv = "1.1.6"
 log = "0.4.14"
-clap = { version = "4.3.19", features = ["derive"] }
+clap = { version = "4.3.24", features = ["derive"] }
 indicatif = "0.17.5"
 rayon = "1.5.1"
 
@@ -24,3 +24,4 @@ debug = 0
 opt-level = 3
 lto = true
 codegen-units = 1
+panic = "abort"
