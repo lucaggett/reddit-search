@@ -27,7 +27,7 @@ fn process_chunk(lines: Vec<String>, search_strings: &Vec<Vec<String>>) -> Vec<S
 fn main() -> std::io::Result<()> {
     let args = Command::new("reddit-search")
         .about("Utility to search the pushshift.io reddit dumps. Takes a zstd compressed file as input and outputs matching lines to a file.\nThe dumps are available here: https://academictorrents.com/details/7c0645c94321311bb05bd879ddee4d0eba08aaee")
-        .version("0.1.0")
+        .version("0.2.0")
         .author("Luc Aggett (luc@aggett.com")
         .arg_required_else_help(true)
         .arg(Arg::new("input")
