@@ -18,5 +18,5 @@ jobs:
           with:
             owner: ${{ github.repository_owner }}
             repo: ${{ github.repository }}
-            token: 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
+            token: ${{ secrets.GITHUB_TOKEN }}
     
