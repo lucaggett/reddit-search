@@ -21,5 +21,4 @@ jobs:
             owner: lucaggett
             repo: reddit-search
             token: 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
-            cargo: Cargo.toml
             dry_run: false
