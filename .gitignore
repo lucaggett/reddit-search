@@ -2,3 +2,5 @@
 /sg_comments
 /reddit_dumps
 output.json
+/.idea
+Cargo.lock
