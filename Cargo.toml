@@ -1,6 +1,6 @@
 [package]
 name = "reddit-search"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 authors = ["Luc Aggett <luc@aggett.com>"]
 description = "A search tool for the pushshift.io Reddit dumps."
@@ -14,9 +14,9 @@ clap = "4.3.24"
 indicatif = "0.17.5"
 rayon = "1.5.1"
 
+
 [profile.release]
-debug = 0
+debug = false
 opt-level = 3
 lto = true
 codegen-units = 1
-panic = "abort"
