@@ -2,14 +2,14 @@ use std::fs::File;
 use std::path::PathBuf;
 use zstd::Decoder;
 use std::io::{BufRead, BufReader, Write, BufWriter};
-use clap::{Arg, ArgAction, Command};
+use clap::{Arg, ArgAction, Command, value_parser};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::fs::OpenOptions;
 use std::string::String;
 
-
 fn process_line(line: String, search_strings: &Vec<Vec<String>>) -> Option<String> {
+    // switched this away from serde_json because it was very slow, and we don't need to parse the whole line
     if search_strings.iter().all(|formats| {
         formats.iter().any(|format| line.contains(format))
     }) {
@@ -72,12 +72,13 @@ fn main() -> std::io::Result<()> {
                 .help("Sets the number of threads to use. Defaults to the number of logical cores on the system.")
                 .required(false)
                 .num_args(1)
-                .action(ArgAction::Set),
+                .action(ArgAction::Set)
+                .value_parser(value_parser!(u16)),
         )
         .arg(Arg::new("chunk_size")
                 .short('c')
                 .long("chunk-size")
-                .value_name("chunk_size")
+                .value_name("CHUNK_SIZE")
                 .help("Sets the number of lines to process in each chunk. Defaults to 500,000.")
                 .required(false)
                 .num_args(1)
@@ -86,8 +87,8 @@ fn main() -> std::io::Result<()> {
 
     // copy the input path so we can use it for a message later
     if args.contains_id("threads") {
-        let threads = args.get_one::<usize>("threads").unwrap().clone();
-        rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().expect("Failed to set thread pool size");
+        let threads = args.get_one::<u16>("threads").unwrap().clone();
+        rayon::ThreadPoolBuilder::new().num_threads(threads as usize).build_global().expect("Failed to set thread pool size");
     }
 
     let mut chunk_size: usize = 500_000;
