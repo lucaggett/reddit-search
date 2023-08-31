@@ -206,12 +206,8 @@ fn main() -> std::io::Result<()> {
         pb.inc(CHUNK_SIZE as u64)
 
     }
-    pb.finish_and_clear();
+    pb.finish();
     println!("Matched {} lines out of {}", matched_lines_count, total_lines);
-    if matched_lines_count == 0 && !append_flag {
-        println!("No matches found, deleting output file");
-        std::fs::remove_file(output_path)?;
-    }
 
     Ok(())
 }
