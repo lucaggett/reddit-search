@@ -1,3 +1,5 @@
+mod constants;
+
 use std::fs::File;
 use std::path::PathBuf;
 use zstd::Decoder;
@@ -7,6 +9,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::fs::OpenOptions;
 use std::string::String;
+use constants::create_line_count_map;
 
 fn process_line(line: &str, search_strings: &Vec<Vec<String>>) -> Option<String> {
     // switched this away from serde_json because it was very slow, and we don't need to parse the whole line
@@ -80,7 +83,7 @@ fn main() -> std::io::Result<()> {
                 .help("Print the number of lines in the input file and exit.")
                 .required(false)
                 .action(ArgAction::SetTrue),
-        ).arg(Arg::new("chunk_size")
+        ).arg(Arg::new("CHUNK_SIZE")
                 .short('c')
                 .long("chunk-size")
                 .value_name("CHUNK_SIZE")
@@ -116,16 +119,12 @@ fn main() -> std::io::Result<()> {
         rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().expect("Failed to set thread pool size");
     }
 
-    let mut chunk_size: usize = 500_000;
-    if args.contains_id("chunk_size") {
-        chunk_size = args.get_one::<usize>("chunk_size").unwrap().clone();
-    }
+    const CHUNK_SIZE: usize = 250_000;
 
 
     let input_path = args.get_one::<String>("input").unwrap();
     let input_buf = PathBuf::from(input_path);
     let input_file = File::open(input_buf.clone())?;
-    let metadata = input_buf.metadata()?;
     let mut decoder = Decoder::new(input_file)?;
     decoder.window_log_max(31)?;
     let input_stream = BufReader::new(decoder);
@@ -157,14 +156,14 @@ fn main() -> std::io::Result<()> {
     let (tx, rx) = std::sync::mpsc::channel();
 
     rayon::spawn(move || {
-        let mut chunk = Vec::with_capacity(chunk_size);
+        let mut chunk = Vec::with_capacity(CHUNK_SIZE);
         for line in input_stream.lines() {
             let line = line.expect("Failed to read line");
             chunk.push(line);
 
-            if chunk.len() >= chunk_size {
+            if chunk.len() >= CHUNK_SIZE {
                 tx.send(chunk).expect("Failed to send chunk");
-                chunk = Vec::with_capacity(chunk_size);
+                chunk = Vec::with_capacity(CHUNK_SIZE);
             }
         }
 
@@ -177,36 +176,31 @@ fn main() -> std::io::Result<()> {
     let mut total_lines = 0;
 
     // estimate the number of lines by multiplying the number of GB by 10_000_000 (This is an estimate I got from looking at a few sample files)
-    let estimated_num_lines = ((metadata.len() as f64 / 1_000_000_000.0) * 6_000_000.0) as u64;
-    let pb = ProgressBar::new_spinner();
-    pb.set_style(ProgressStyle::default_spinner()
-        .template("[{elapsed_precise}] {pos} lines processed ({msg})").expect("Failed to set progress bar style")
-        .tick_chars("-/||\\-"));
+    let line_count_map = create_line_count_map();
+    let file_name = input_path.split("/").last().unwrap();
+    let num_lines = line_count_map.get(file_name).unwrap_or_else(|| &0);
+    if num_lines == &0 {
+        println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
+    }
+    let pb = ProgressBar::new(*num_lines as u64);
+    pb.set_style(ProgressStyle::default_bar()
+        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})").expect("Failed to set progress bar style")
+        .progress_chars("#>-"));
 
 
     for chunk in rx {
         let matches = process_chunk(chunk, &search_strings);
         matched_lines_count += matches.len();
-        total_lines += chunk_size;
+        total_lines += CHUNK_SIZE;
 
         for line in matches {
             writeln!(output_stream, "{}", line)?;
         }
-
-        pb.set_position(total_lines as u64); // Update progress bar with lines processed
-        let percent = (total_lines as f64 / estimated_num_lines as f64) * 100.0;
-        //if percent < 100.0 {
-            pb.set_message(format!("~{:.0}%", percent));
-        //} else {
-            // pb.set_message("Please wait...");
-            // if percent > 150.0 {
-            //     pb.set_message("Very bad estimate, please wait...");
-        //}
+        pb.inc(CHUNK_SIZE as u64)
 
     }
-
-    //pb.finish_with_message("Done!");
     println!("Matched {} lines out of {}", matched_lines_count, total_lines);
+    pb.finish_and_clear();
     if matched_lines_count == 0 && !append_flag {
         println!("No matches found, deleting output file");
         std::fs::remove_file(output_path)?;
