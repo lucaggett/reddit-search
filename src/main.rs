@@ -25,7 +25,7 @@ fn process_line(line: &str, search_strings: &Vec<Vec<String>>) -> Option<String>
 
 fn process_chunk(lines: Vec<String>, search_strings: &Vec<Vec<String>>) -> Vec<String> {
     lines.into_par_iter()
-        .filter_map(|line| process_line(&line, &search_strings))
+        .filter_map(|line| process_line(&line, search_strings))
         .collect()
 }
 
@@ -96,30 +96,28 @@ fn main() -> std::io::Result<()> {
         ).get_matches();
 
 
-    if args.contains_id("linecount") {
-        if args.get_one::<bool>("linecount").unwrap().clone() {
-            let input_path = args.get_one::<String>("input").unwrap();
-            let input_buf = PathBuf::from(input_path);
-            let input_file = File::open(input_buf.clone())?;
-            let metadata = input_buf.metadata()?;
-            let mut decoder = Decoder::new(input_file)?;
-            decoder.window_log_max(31)?;
-            let input_stream = BufReader::new(decoder);
-            let mut line_count = 0;
-            for _ in input_stream.lines() {
-                line_count += 1;
-            }
-            // print the size in GB and the number of lines
-            println!("{}:{}:{}", metadata.len() as f64 / 1_000_000_000.0, line_count, input_path);
-            return Ok(());
+    if args.contains_id("linecount") && *args.get_one::<bool>("linecount").unwrap() {
+        let input_path = args.get_one::<String>("input").unwrap();
+        let input_buf = PathBuf::from(input_path);
+        let input_file = File::open(input_buf.clone())?;
+        let metadata = input_buf.metadata()?;
+        let mut decoder = Decoder::new(input_file)?;
+        decoder.window_log_max(31)?;
+        let input_stream = BufReader::new(decoder);
+        let mut line_count = 0;
+        for _ in input_stream.lines() {
+            line_count += 1;
         }
+        // print the size in GB and the number of lines
+        println!("{}:{}:{}", metadata.len() as f64 / 1_000_000_000.0, line_count, input_path);
+        return Ok(());
     }
     // set the number of threads to 4 or the number of logical cores on the system, whichever is lower
     let mut threads = 4;
     if num_cpus::get() < threads {
         threads = num_cpus::get();
     } else if args.contains_id("threads") {
-        threads = args.get_one::<usize>("threads").unwrap().clone();
+        threads = *args.get_one::<usize>("threads").unwrap();
     }
     rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
 
@@ -137,7 +135,7 @@ fn main() -> std::io::Result<()> {
 
     let output_path = args.get_one::<String>("output").unwrap();
     let output_buf = PathBuf::from(output_path);
-    let append_flag = args.get_one("append").unwrap_or(&false).clone();
+    let append_flag = *args.get_one("append").unwrap_or(&false);
     let output_file = OpenOptions::new()
         .create(true)
         .write(true)
@@ -146,7 +144,7 @@ fn main() -> std::io::Result<()> {
     let mut output_stream = BufWriter::new(output_file);
     let mut search_strings: Vec<Vec<String>> = Vec::new();
     for field in args.get_many::<String>("fields").unwrap() {
-        let mut split = field.split(":");
+        let mut split = field.split(':');
         let field_key = split.next().unwrap().to_string();
         let value = split.next().unwrap().to_string();
         let formats = vec![
@@ -183,8 +181,8 @@ fn main() -> std::io::Result<()> {
 
     // estimate the number of lines by multiplying the number of GB by 10_000_000 (This is an estimate I got from looking at a few sample files)
     let line_count_map = create_line_count_map();
-    let file_name = input_path.split("/").last().unwrap();
-    let mut num_lines = line_count_map.get(file_name).unwrap_or_else(|| &0).clone();
+    let file_name = input_path.split('/').last().unwrap();
+    let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
     if num_lines == 0 {
         println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
         //estimate the number of lines as approximately 10,000,000 per GB
