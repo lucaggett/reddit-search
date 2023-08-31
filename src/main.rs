@@ -1,4 +1,5 @@
 mod constants;
+extern crate num_cpus;
 
 use std::fs::File;
 use std::path::PathBuf;
@@ -113,17 +114,22 @@ fn main() -> std::io::Result<()> {
             return Ok(());
         }
     }
-    // copy the input path so we can use it for a message later
-    if args.contains_id("threads") {
-        let threads = args.get_one::<usize>("threads").unwrap().clone();
-        rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().expect("Failed to set thread pool size");
+    // set the number of threads to 4 or the number of logical cores on the system, whichever is lower
+    let mut threads = 4;
+    if num_cpus::get() < threads {
+        threads = num_cpus::get();
+    } else if args.contains_id("threads") {
+        threads = args.get_one::<usize>("threads").unwrap().clone();
     }
+    rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
 
-    const CHUNK_SIZE: usize = 250_000;
+    // this is a magic number that seems to work well
+    const CHUNK_SIZE: usize = 500_000;
 
 
     let input_path = args.get_one::<String>("input").unwrap();
     let input_buf = PathBuf::from(input_path);
+    let metadata = input_buf.metadata()?;
     let input_file = File::open(input_buf.clone())?;
     let mut decoder = Decoder::new(input_file)?;
     decoder.window_log_max(31)?;
@@ -178,11 +184,14 @@ fn main() -> std::io::Result<()> {
     // estimate the number of lines by multiplying the number of GB by 10_000_000 (This is an estimate I got from looking at a few sample files)
     let line_count_map = create_line_count_map();
     let file_name = input_path.split("/").last().unwrap();
-    let num_lines = line_count_map.get(file_name).unwrap_or_else(|| &0);
-    if num_lines == &0 {
+    let mut num_lines = line_count_map.get(file_name).unwrap_or_else(|| &0).clone();
+    if num_lines == 0 {
         println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
+        //estimate the number of lines as approximately 10,000,000 per GB
+        let estimated_num_lines = ((metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0);
+        num_lines = estimated_num_lines as u64;
     }
-    let pb = ProgressBar::new(*num_lines as u64);
+    let pb = ProgressBar::new(num_lines);
     pb.set_style(ProgressStyle::default_bar()
         .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})").expect("Failed to set progress bar style")
         .progress_chars("#>-"));
@@ -199,8 +208,8 @@ fn main() -> std::io::Result<()> {
         pb.inc(CHUNK_SIZE as u64)
 
     }
-    println!("Matched {} lines out of {}", matched_lines_count, total_lines);
     pb.finish_and_clear();
+    println!("Matched {} lines out of {}", matched_lines_count, total_lines);
     if matched_lines_count == 0 && !append_flag {
         println!("No matches found, deleting output file");
         std::fs::remove_file(output_path)?;
