@@ -188,7 +188,7 @@ fn main() -> std::io::Result<()> {
     if num_lines == 0 {
         println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
         //estimate the number of lines as approximately 10,000,000 per GB
-        let estimated_num_lines = ((metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0);
+        let estimated_num_lines = (metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0;
         num_lines = estimated_num_lines as u64;
     }
     let pb = ProgressBar::new(num_lines);
