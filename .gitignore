@@ -5,3 +5,5 @@ output.json
 /.idea
 Cargo.lock
 .DS_STORE
+src/main.singlethreaded
+src/main.multithreaded
