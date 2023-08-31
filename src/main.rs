@@ -8,12 +8,12 @@ use rayon::prelude::*;
 use std::fs::OpenOptions;
 use std::string::String;
 
-fn process_line(line: String, search_strings: &Vec<Vec<String>>) -> Option<String> {
+fn process_line(line: &str, search_strings: &Vec<Vec<String>>) -> Option<String> {
     // switched this away from serde_json because it was very slow, and we don't need to parse the whole line
     if search_strings.iter().all(|formats| {
         formats.iter().any(|format| line.contains(format))
     }) {
-        Some(line)
+        Some(line.clone().to_string())
     } else {
         None
     }
@@ -21,7 +21,7 @@ fn process_line(line: String, search_strings: &Vec<Vec<String>>) -> Option<Strin
 
 fn process_chunk(lines: Vec<String>, search_strings: &Vec<Vec<String>>) -> Vec<String> {
     lines.into_par_iter()
-        .filter_map(|line| process_line(line, &search_strings))
+        .filter_map(|line| process_line(&line, &search_strings))
         .collect()
 }
 
@@ -37,6 +37,7 @@ fn main() -> std::io::Result<()> {
                 .value_name("INPUT")
                 .help("Sets the input file to use. Must be a zstd compressed newline delimited JSON file.")
                 .required(true)
+
                 .action(ArgAction::Set)
                 .num_args(1),
         )
@@ -73,22 +74,46 @@ fn main() -> std::io::Result<()> {
                 .required(false)
                 .num_args(1)
                 .action(ArgAction::Set)
-                .value_parser(value_parser!(u16)),
-        )
-        .arg(Arg::new("chunk_size")
+                .value_parser(value_parser!(usize)),
+        ).arg(Arg::new("linecount")
+                .long("linecount")
+                .help("Print the number of lines in the input file and exit.")
+                .required(false)
+                .action(ArgAction::SetTrue),
+        ).arg(Arg::new("chunk_size")
                 .short('c')
                 .long("chunk-size")
                 .value_name("CHUNK_SIZE")
                 .help("Sets the number of lines to process in each chunk. Defaults to 500,000.")
                 .required(false)
                 .num_args(1)
+                 .value_parser(value_parser!(usize))
                 .action(ArgAction::Set),
         ).get_matches();
 
+
+    if args.contains_id("linecount") {
+        if args.get_one::<bool>("linecount").unwrap().clone() {
+            let input_path = args.get_one::<String>("input").unwrap();
+            let input_buf = PathBuf::from(input_path);
+            let input_file = File::open(input_buf.clone())?;
+            let metadata = input_buf.metadata()?;
+            let mut decoder = Decoder::new(input_file)?;
+            decoder.window_log_max(31)?;
+            let input_stream = BufReader::new(decoder);
+            let mut line_count = 0;
+            for _ in input_stream.lines() {
+                line_count += 1;
+            }
+            // print the size in GB and the number of lines
+            println!("{}:{}:{}", metadata.len() as f64 / 1_000_000_000.0, line_count, input_path);
+            return Ok(());
+        }
+    }
     // copy the input path so we can use it for a message later
     if args.contains_id("threads") {
-        let threads = args.get_one::<u16>("threads").unwrap().clone();
-        rayon::ThreadPoolBuilder::new().num_threads(threads as usize).build_global().expect("Failed to set thread pool size");
+        let threads = args.get_one::<usize>("threads").unwrap().clone();
+        rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().expect("Failed to set thread pool size");
     }
 
     let mut chunk_size: usize = 500_000;
@@ -151,8 +176,8 @@ fn main() -> std::io::Result<()> {
     let mut matched_lines_count = 0;
     let mut total_lines = 0;
 
-    // estimate the number of lines by multiplying the number of GB by 8000000 (This is an estimate I got from looking at a few sample files)
-    let estimated_num_lines = ((metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0) as u64;
+    // estimate the number of lines by multiplying the number of GB by 10_000_000 (This is an estimate I got from looking at a few sample files)
+    let estimated_num_lines = ((metadata.len() as f64 / 1_000_000_000.0) * 6_000_000.0) as u64;
     let pb = ProgressBar::new_spinner();
     pb.set_style(ProgressStyle::default_spinner()
         .template("[{elapsed_precise}] {pos} lines processed ({msg})").expect("Failed to set progress bar style")
@@ -170,15 +195,17 @@ fn main() -> std::io::Result<()> {
 
         pb.set_position(total_lines as u64); // Update progress bar with lines processed
         let percent = (total_lines as f64 / estimated_num_lines as f64) * 100.0;
-        if percent < 100.0 {
+        //if percent < 100.0 {
             pb.set_message(format!("~{:.0}%", percent));
-        } else {
-            pb.set_message("Please wait...");
-        }
+        //} else {
+            // pb.set_message("Please wait...");
+            // if percent > 150.0 {
+            //     pb.set_message("Very bad estimate, please wait...");
+        //}
 
     }
 
-    pb.finish_with_message("Done!");
+    //pb.finish_with_message("Done!");
     println!("Matched {} lines out of {}", matched_lines_count, total_lines);
     if matched_lines_count == 0 && !append_flag {
         println!("No matches found, deleting output file");
