@@ -1,12 +1,12 @@
 [package]
 name = "reddit-search"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 authors = ["Luc Aggett <luc@aggett.com>"]
 description = "A search tool for the pushshift.io Reddit dumps."
 license = "MIT"
 repository = "https://github.com/lucaggett/reddit-search"
-categories = ["command-line-utilities"]
+categories = ["command-line-utilities, cli"]
 
 [dependencies]
 zstd = "0.12.4"
