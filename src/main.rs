@@ -114,7 +114,7 @@ fn main() -> std::io::Result<()> {
     }
     // set the number of threads to 4 or the number of logical cores on the system, whichever is lower
     let mut threads = 4;
-    if num_cpus::get() < threads {
+    if num_cpus::get() > 8 {
         threads = num_cpus::get();
     } else if args.contains_id("threads") {
         threads = *args.get_one::<usize>("threads").unwrap();
