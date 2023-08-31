@@ -97,8 +97,8 @@ fn main() -> std::io::Result<()> {
 
 
     if args.contains_id("linecount") && *args.get_one::<bool>("linecount").unwrap() {
-        let input_path = args.get_one::<String>("input").unwrap();
-        let input_buf = PathBuf::from(input_path);
+        let input_path = args.get_one::<String>("input").unwrap().replace("\\", "/");
+        let input_buf = PathBuf::from(input_path.clone());
         let input_file = File::open(input_buf.clone())?;
         let metadata = input_buf.metadata()?;
         let mut decoder = Decoder::new(input_file)?;
