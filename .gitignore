@@ -4,3 +4,4 @@
 output.json
 /.idea
 Cargo.lock
+.DS_STORE
