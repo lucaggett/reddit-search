@@ -18,5 +18,5 @@ for file in /path/to/dumps; do; reddit-search --append -i $file -o output.json -
 
 ### Powershell
 ```powershell
-Get-ChildItem X:\path\to\dumps | ForEach-Object { .\target\release\reddit-search.exe --input $_.FullName -f subreddit:schwiiz -o output_schwiiz_submissions.json --append }
+Get-ChildItem C:\path\to\dumps | ForEach-Object { reddit-search.exe --input $_.FullName -f subreddit:schwiiz -o output_schwiiz_submissions.json --append }
 ```
