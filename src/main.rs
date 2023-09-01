@@ -79,11 +79,6 @@ fn main() -> std::io::Result<()> {
                 .num_args(1)
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(usize)),
-        ).arg(Arg::new("linecount")
-                .long("linecount")
-                .help("Print the number of lines in the input file and exit.")
-                .required(false)
-                .action(ArgAction::SetTrue),
         ).arg(Arg::new("CHUNK_SIZE")
                 .short('c')
                 .long("chunk-size")
@@ -96,22 +91,7 @@ fn main() -> std::io::Result<()> {
         ).get_matches();
 
 
-    if args.contains_id("linecount") && *args.get_one::<bool>("linecount").unwrap() {
-        let input_path = args.get_one::<String>("input").unwrap();
-        let input_buf = PathBuf::from(input_path.clone());
-        let input_file = File::open(input_buf.clone())?;
-        let metadata = input_buf.metadata()?;
-        let mut decoder = Decoder::new(input_file)?;
-        decoder.window_log_max(31)?;
-        let input_stream = BufReader::new(decoder);
-        let mut line_count = 0;
-        for _ in input_stream.lines() {
-            line_count += 1;
-        }
-        // print the size in GB and the number of lines
-        println!("{}:{}:{}", metadata.len() as f64 / 1_000_000_000.0, line_count, input_path);
-        return Ok(());
-    }
+
     // set the number of threads to 4 or the number of logical cores on the system, whichever is lower
     let mut threads = 4;
     if num_cpus::get() > 8 {
