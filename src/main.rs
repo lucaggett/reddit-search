@@ -12,7 +12,7 @@ use std::fs::OpenOptions;
 use std::string::String;
 use constants::create_line_count_map;
 
-fn process_line(line: &str, search_strings: &Vec<Vec<String>>) -> Option<String> {
+fn process_line(line: &str, search_strings: &[Vec<String>]) -> Option<String> {
     // switched this away from serde_json because it was very slow, and we don't need to parse the whole line
     if search_strings.iter().all(|formats| {
         formats.iter().any(|format| line.contains(format))
