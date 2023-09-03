@@ -136,7 +136,7 @@ fn main() -> std::io::Result<()> {
     }
 
 
-    println!("Starting reddit-search for {} ({} threads)", input_path, rayon::current_num_threads());
+    //println!("Starting reddit-search for {} ({} threads)", input_path, rayon::current_num_threads());
 
     let (tx, rx) = std::sync::mpsc::channel();
 
@@ -158,7 +158,6 @@ fn main() -> std::io::Result<()> {
     });
 
     let mut matched_lines_count = 0;
-    let mut total_lines = 0;
     let line_count_map = create_line_count_map();
     let file_name = input_path.split('/').last().unwrap();
     let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
@@ -177,7 +176,6 @@ fn main() -> std::io::Result<()> {
     for chunk in rx {
         let matches = process_chunk(chunk, &search_strings);
         matched_lines_count += matches.len();
-        total_lines += CHUNK_SIZE;
 
         for line in matches {
             writeln!(output_stream, "{}", line)?;
@@ -185,8 +183,8 @@ fn main() -> std::io::Result<()> {
         pb.inc(CHUNK_SIZE as u64)
 
     }
-    pb.finish();
-    println!("Matched {} lines out of {}", matched_lines_count, total_lines);
+    pb.finish_and_clear();
+    println!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, input_path);
 
     Ok(())
 }
