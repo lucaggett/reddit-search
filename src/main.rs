@@ -49,10 +49,10 @@ fn main() -> std::io::Result<()> {
                 .short('o')
                 .long("output")
                 .value_name("OUTPUT")
-                .help("Sets the output file to use. Will be created if it doesn't exist.")
-                .required(true)
+                .help("Sets the output file to use.")
                 .action(ArgAction::Set)
-                .num_args(1),
+                .num_args(1)
+                .default_value("reddit_comments.json"),
         )
         .arg(Arg::new("fields")
                 .short('f')
@@ -74,20 +74,11 @@ fn main() -> std::io::Result<()> {
                 .short('t')
                 .long("threads")
                 .value_name("THREADS")
-                .help("Sets the number of threads to use. Defaults to the number of logical cores on the system.")
+                .help("Sets the number of threads to use. Defaults to 4 cores or the number of logical cores on the system, whichever is lower.")
                 .required(false)
                 .num_args(1)
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(usize)),
-        ).arg(Arg::new("CHUNK_SIZE")
-                .short('c')
-                .long("chunk-size")
-                .value_name("CHUNK_SIZE")
-                .help("Sets the number of lines to process in each chunk. Defaults to 500,000.")
-                .required(false)
-                .num_args(1)
-                 .value_parser(value_parser!(usize))
-                .action(ArgAction::Set),
         ).get_matches();
 
 
@@ -106,6 +97,11 @@ fn main() -> std::io::Result<()> {
 
 
     let input_path = args.get_one::<String>("input").unwrap().replace("\\", "/");
+    if !input_path.ends_with(".zst") {
+        let err_msg = format!("Input file must be a zstd compressed file. {} is not a zstd file.", input_path);
+        eprintln!("{}", err_msg);
+        return Ok(());
+    }
     let input_buf = PathBuf::from(input_path.clone());
     let metadata = input_buf.metadata()?;
     let input_file = File::open(input_buf.clone())?;
@@ -114,6 +110,11 @@ fn main() -> std::io::Result<()> {
     let input_stream = BufReader::new(decoder);
 
     let output_path = args.get_one::<String>("output").unwrap();
+    // if the output file exists, exit with an error mentioning the --append option
+    if PathBuf::from(output_path).exists() && !args.contains_id("append") {
+        let err_msg = format!("Output file {} already exists. Use the --append option to append to the file.", output_path);
+        eprintln!("{}", err_msg);
+    }
     let output_buf = PathBuf::from(output_path);
     let append_flag = *args.get_one("append").unwrap_or(&false);
     let output_file = OpenOptions::new()
@@ -158,8 +159,6 @@ fn main() -> std::io::Result<()> {
 
     let mut matched_lines_count = 0;
     let mut total_lines = 0;
-
-    // estimate the number of lines by multiplying the number of GB by 10_000_000 (This is an estimate I got from looking at a few sample files)
     let line_count_map = create_line_count_map();
     let file_name = input_path.split('/').last().unwrap();
     let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
@@ -172,7 +171,7 @@ fn main() -> std::io::Result<()> {
     let pb = ProgressBar::new(num_lines);
     pb.set_style(ProgressStyle::default_bar()
         .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})").expect("Failed to set progress bar style")
-        .progress_chars("#>-"));
+        .progress_chars("}=>-"));
 
 
     for chunk in rx {
