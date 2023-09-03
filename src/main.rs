@@ -23,7 +23,7 @@ fn process_line(line: &str, search_strings: &[Vec<String>]) -> Option<String> {
     }
 }
 
-fn process_chunk(lines: Vec<String>, search_strings: &Vec<Vec<String>>) -> Vec<String> {
+fn process_chunk(lines: Vec<String>, search_strings: &[Vec<String>]) -> Vec<String> {
     lines.into_par_iter()
         .filter_map(|line| process_line(&line, search_strings))
         .collect()
