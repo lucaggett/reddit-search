@@ -184,7 +184,16 @@ fn main() -> std::io::Result<()> {
 
     }
     pb.finish_and_clear();
-    println!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, input_path);
+    print!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, input_path);
+    if pb.elapsed().as_secs() > 60 {
+        if pb.elapsed().as_secs() > 120 {
+            println!(" (took {} minutes, {} seconds)", pb.elapsed().as_secs() / 60, pb.elapsed().as_secs() % 60)
+        } else {
+            println!(" (took {} minute, {} seconds)", pb.elapsed().as_secs() / 60, pb.elapsed().as_secs() % 60)
+        }
+    } else {
+        println!(" (took {} seconds)", pb.elapsed().as_secs());
+    }
 
     Ok(())
 }
