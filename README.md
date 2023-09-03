@@ -11,6 +11,11 @@ To see command line parameters, use reddit-search -h or --help
 ## Getting all matching comments from the dataset
 If you only want a subset of of comments (for example, all comments in /r/funny from 2012-01 to 2013-01), I recommend filtering the files passed into the program rather than filtering the JSON by date
 
+### Basic Usage
+```sh
+reddit-search --input <input file path> --output <output file path> --fields <field:value> ...
+```
+
 ### Unix-like Shell (Bash, ZSH, etc)
 ```sh
 for file in /path/to/dumps; do; reddit-search --append -i $file -o output.json -f field:value; done
