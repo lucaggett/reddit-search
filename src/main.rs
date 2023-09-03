@@ -96,7 +96,7 @@ fn main() -> std::io::Result<()> {
     const CHUNK_SIZE: usize = 500_000;
 
 
-    let input_path = args.get_one::<String>("input").unwrap().replace("\\", "/");
+    let input_path = args.get_one::<String>("input").unwrap().replace('\\', "/");
     if !input_path.ends_with(".zst") {
         let err_msg = format!("Input file must be a zstd compressed file. {} is not a zstd file.", input_path);
         eprintln!("{}", err_msg);
