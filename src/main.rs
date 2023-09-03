@@ -84,13 +84,11 @@ fn main() -> std::io::Result<()> {
 
 
     // set the number of threads to 4 or the number of logical cores on the system, whichever is lower
-    let mut threads = 4;
-    if num_cpus::get() > 8 {
-        threads = num_cpus::get();
-    } else if args.contains_id("threads") {
-        threads = *args.get_one::<usize>("threads").unwrap();
+    if args.contains_id("threads") {
+        let threads = *args.get_one::<usize>("threads").unwrap();
+        rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
     }
-    rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
+
 
     // this is a magic number that seems to work well
     const CHUNK_SIZE: usize = 500_000;
