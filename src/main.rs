@@ -41,7 +41,6 @@ fn main() -> std::io::Result<()> {
                 .value_name("INPUT")
                 .help("Sets the input file to use. Must be a zstd compressed newline delimited JSON file.")
                 .required(true)
-
                 .action(ArgAction::Set)
                 .num_args(1),
         )
@@ -74,7 +73,7 @@ fn main() -> std::io::Result<()> {
                 .short('t')
                 .long("threads")
                 .value_name("THREADS")
-                .help("Sets the number of threads to use. Defaults to 4 cores or the number of logical cores on the system, whichever is lower.")
+                .help("Sets the number of threads to use. Defaults to the number of logical cores on the system.")
                 .required(false)
                 .num_args(1)
                 .action(ArgAction::Set)
@@ -83,12 +82,11 @@ fn main() -> std::io::Result<()> {
 
 
 
-    // set the number of threads to 4 or the number of logical cores on the system, whichever is lower
+    // set the number of threads if "threads" argument is provided
     if args.contains_id("threads") {
         let threads = *args.get_one::<usize>("threads").unwrap();
         rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
-    }
-
+    } 
 
     // this is a magic number that seems to work well
     const CHUNK_SIZE: usize = 500_000;
@@ -168,7 +166,7 @@ fn main() -> std::io::Result<()> {
     let pb = ProgressBar::new(num_lines);
     pb.set_style(ProgressStyle::default_bar()
         .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})").expect("Failed to set progress bar style")
-        .progress_chars("}=>-"));
+        .progress_chars("#>-"));
 
 
     for chunk in rx {
