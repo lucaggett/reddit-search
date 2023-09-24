@@ -5,7 +5,7 @@ use std::fs::File;
 use std::path::PathBuf;
 use zstd::Decoder;
 use std::io::{BufRead, BufReader, Write, BufWriter};
-use clap::{Arg, ArgAction, Command, value_parser};
+use clap::{Arg, arg, ArgAction, Command, value_parser};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::fs::OpenOptions;
@@ -78,9 +78,19 @@ fn main() -> std::io::Result<()> {
                 .num_args(1)
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(usize)),
+        ).arg(Arg::new("random")
+                .short('r')
+                .long("random")
+                .help("Randomly sample the input file. Useful for testing.")
+                .required(false)
+                .action(ArgAction::SetTrue),
+        ).arg(Arg::new("linecount")
+                .short('l')
+                .long("linecount")
+                .help("Print the number of lines in the input file and exit.")
+                .required(false)
+                .action(ArgAction::SetTrue),
         ).get_matches();
-
-
 
     // set the number of threads if "threads" argument is provided
     if args.contains_id("threads") {
@@ -88,11 +98,29 @@ fn main() -> std::io::Result<()> {
         rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
     } 
 
+    if args.contains_id("linecount") {
+        let input_path = args.get_one::<String>("input").unwrap().replace('\\', "/");
+        let file_name = input_path.split('/').last().unwrap();
+        let input_buf = PathBuf::from(input_path.clone());
+        let metadata = input_buf.metadata()?;
+        let input_file = File::open(input_buf.clone())?;
+        let mut decoder = Decoder::new(input_file)?;
+        decoder.window_log_max(31)?;
+        let input_stream = BufReader::new(decoder);
+        let mut num_lines = 0;
+        for _ in input_stream.lines() {
+            num_lines += 1;
+        }
+        println!("{};{};{}", file_name, metadata.len(), num_lines);
+    }
+
+
     // this is a magic number that seems to work well
     const CHUNK_SIZE: usize = 500_000;
 
-
+    // fix windows-style paths
     let input_path = args.get_one::<String>("input").unwrap().replace('\\', "/");
+    // check that the input file is a zstd file
     if !input_path.ends_with(".zst") {
         let err_msg = format!("Input file must be a zstd compressed file. {} is not a zstd file.", input_path);
         eprintln!("{}", err_msg);
