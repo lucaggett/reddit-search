@@ -9,3 +9,5 @@ src/main.singlethreaded
 src/main.multithreaded
 out.log
 flamegraph.svg
+*.json
+*.txt
