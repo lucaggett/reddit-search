@@ -13,18 +13,16 @@ use std::fs::OpenOptions;
 use std::string::String;
 use constants::create_line_count_map;
 
-fn process_line(line: &str, search_strings: &[Vec<String>]) -> Option<String> {
+fn process_line(line: &str, search_strings: &Vec<String>) -> Option<String> {
     // switched this away from serde_json because it was very slow, and we don't need to parse the whole line
-    if search_strings.iter().all(|formats| {
-        formats.iter().any(|format| line.contains(format))
-    }) {
-        Some(line.clone().to_string())
+    if search_strings.iter().any(|formats| { line.to_lowercase().contains(&formats.to_lowercase()) }) {
+        Some(line.to_string())
     } else {
         None
     }
 }
 
-fn process_chunk(lines: Vec<String>, search_strings: &[Vec<String>]) -> Vec<String> {
+fn process_chunk(lines: Vec<String>, search_strings: &Vec<String>) -> Vec<String> {
     lines.into_par_iter()
         .filter_map(|line| process_line(&line, search_strings))
         .collect()
@@ -59,8 +57,9 @@ fn main() -> std::io::Result<()> {
             .long("fields")
             .value_name("FIELDS")
             .help("Sets the fields to search. Must be in the format <field>:<value>. Can be specified multiple times.")
-            .required(true)
+            .required_unless_present("preset")
             .action(ArgAction::Set)
+            .value_parser(value_parser!(String))
             .num_args(1..)
         )
         .arg(Arg::new("append")
@@ -89,6 +88,20 @@ fn main() -> std::io::Result<()> {
               .short('l')
               .long("linecount")
               .help("Print the number of lines in the input file and exit.")
+              .required(false)
+              .action(ArgAction::SetTrue),
+    ).arg(Arg::new("preset")
+              .short('p')
+              .long("preset")
+              .value_name("PRESET")
+              .help("Use a preset instead of specifying fields manually. Available presets are: en_news, en_politics, en_hate_speech")
+              .required_unless_present("fields")
+              .action(ArgAction::Set)
+              .num_args(1)
+    ).arg(Arg::new("verbose")
+              .short('v')
+              .long("verbose")
+              .help("Print verbose output.")
               .required(false)
               .action(ArgAction::SetTrue),
     ).get_matches();
@@ -120,7 +133,43 @@ fn main() -> std::io::Result<()> {
         println!("{};{};{}", file_name, metadata.len(), num_lines);
     }
 
-    //println!("reddit-search v{}", env!("CARGO_PKG_VERSION"));
+    // Search fields
+    // TESTING FOR SUBCOMMAND "preset"
+    let search_fields: Vec<String>;
+    let preset = args.get_one::<String>("preset");
+    if preset.is_some() {
+        let preset = preset.unwrap();
+        let presets_map = constants::get_presets();
+        // check if the preset exists
+        if !presets_map.contains_key(preset.as_str()) {
+            let err_msg = format!("Preset {} not found. Available presets are: {}", preset, presets_map.keys().map(|s| s.to_string()).collect::<Vec<String>>().join(", "));
+            eprintln!("{}", err_msg);
+            return Ok(());
+        }
+        // preset map contains a list of strings, so we need to convert the preset string to a &str
+        let args_fields = presets_map.get(preset.as_str()).unwrap().to_vec();
+        // convert all values in the vec from &str to String
+        search_fields = args_fields.iter().map(|s| s.to_string()).collect();
+    } else {
+        let args_fields: Vec<&str> = args.get_many::<String>("fields").unwrap().map(|s| s.as_str()).collect();
+        println!("{:?}", args_fields);
+        search_fields = args_fields.iter().map(|s| s.to_string()).collect();
+    }
+
+    let mut search_strings: Vec<String> = Vec::new();
+    for field in search_fields {
+        let mut split = field.split(':');
+        // test if split contains two elements
+        if split.clone().count() != 2 {
+            let err_msg = format!("Field {} is not in the format <field>:<value>", field);
+            eprintln!("{}", err_msg);
+            return Ok(());
+        }
+        let field_key = split.next().unwrap().to_string();
+        let value = split.next().unwrap().to_string();
+        search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
+        search_strings.push(format!("\"{}\": {}", field_key, value));
+    }
 
     // this is a magic number that seems to work well
     const CHUNK_SIZE: usize = 500_000;
@@ -160,22 +209,20 @@ fn main() -> std::io::Result<()> {
         .write(true)
         .append(append_flag)
         .open(output_buf)?;
-    let mut output_stream = BufWriter::new(output_file);
-    let mut search_strings: Vec<Vec<String>> = Vec::new();
-    for field in args.get_many::<String>("fields").unwrap() {
-        let mut split = field.split(':');
-        let field_key = split.next().unwrap().to_string();
-        let value = split.next().unwrap().to_string();
-        let formats = vec![
-            format!("\"{}\":\"{}\"", field_key, value),
-            format!("\"{}\":{}", field_key, value),
-        ];
-        search_strings.push(formats);
+
+    // if the debug flag is set, print some general info
+    let verbose_flag = *args.get_one("verbose").unwrap_or(&false);
+    if verbose_flag {
+        println!("Starting reddit-search for {} ({} threads) at {}", input_path, rayon::current_num_threads(), chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
+        println!("Input file: {}", input_path);
+        println!("Output file: {}", output_path);
+        println!("Append: {}", append_flag);
+        println!("Threads: {}", rayon::current_num_threads());
+        println!("Line count: {}", metadata.len());
+        println!("Search fields: {}", search_strings.join(", "));
     }
 
-
-    println!("Starting reddit-search for {} ({} threads)", input_path, rayon::current_num_threads());
-
+    let mut output_stream = BufWriter::new(output_file);
     let (tx, rx) = std::sync::mpsc::channel();
 
     rayon::spawn(move || {
