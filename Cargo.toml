@@ -1,6 +1,6 @@
 [package]
 name = "reddit-search"
-version = "0.6.12"
+version = "0.7.0"
 edition = "2021"
 authors = ["Luc Aggett <luc@aggett.com>"]
 description = "A search tool for the pushshift.io Reddit dumps."
@@ -14,6 +14,7 @@ clap = "4.3.24"
 indicatif = "0.17.5"
 rayon = "1.5.1"
 num_cpus = "1.16.0"
+chrono = "0.4.31"
 
 
 [profile.release]
