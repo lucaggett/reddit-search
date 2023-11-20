@@ -170,7 +170,7 @@ fn main() -> std::io::Result<()> {
     }
 
 
-    //println!("Starting reddit-search for {} ({} threads)", input_path, rayon::current_num_threads());
+    println!("Starting reddit-search for {} ({} threads)", input_path, rayon::current_num_threads());
 
     let (tx, rx) = std::sync::mpsc::channel();
 
@@ -197,7 +197,7 @@ fn main() -> std::io::Result<()> {
     let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
     if num_lines == 0 {
         println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
-        //estimate the number of lines as approximately 10,000,000 per GB
+        // estimate the number of lines as approximately 10,000,000 per GB
         let estimated_num_lines = (metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0;
         num_lines = estimated_num_lines as u64;
     }
