@@ -168,7 +168,7 @@ fn main() -> std::io::Result<()> {
         let field_key = split.next().unwrap().to_string();
         let value = split.next().unwrap().to_string();
         search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
-        search_strings.push(format!("\"{}\": {}", field_key, value));
+        search_strings.push(format!("\"{}\":{}", field_key, value));
     }
 
     // this is a magic number that seems to work well
