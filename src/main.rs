@@ -1,11 +1,12 @@
 mod constants;
+
 extern crate num_cpus;
 
 use std::fs::File;
 use std::path::PathBuf;
 use zstd::Decoder;
 use std::io::{BufRead, BufReader, Write, BufWriter};
-use clap::{Arg, arg, ArgAction, Command, value_parser};
+use clap::{Arg, ArgAction, Command, value_parser};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::fs::OpenOptions;
@@ -36,64 +37,65 @@ fn main() -> std::io::Result<()> {
         .author("Luc Aggett (luc@aggett.com")
         .arg_required_else_help(true)
         .arg(Arg::new("input")
-                .short('i')
-                .long("input")
-                .value_name("INPUT")
-                .help("Sets the input file to use. Must be a zstd compressed newline delimited JSON file.")
-                .required(true)
-                .action(ArgAction::Set)
-                .num_args(1),
+                 .short('i')
+                 .long("input")
+                 .value_name("INPUT")
+                 .help("Sets the input file to use. Must be a zstd compressed newline delimited JSON file.")
+                 .required(true)
+                 .action(ArgAction::Set)
+                 .num_args(1),
         )
         .arg(Arg::new("output")
-                .short('o')
-                .long("output")
-                .value_name("OUTPUT")
-                .help("Sets the output file to use.")
-                .action(ArgAction::Set)
-                .num_args(1)
-                .default_value("reddit_comments.json"),
+                 .short('o')
+                 .long("output")
+                 .value_name("OUTPUT")
+                 .help("Sets the output file to use.")
+                 .action(ArgAction::Set)
+                 .num_args(1)
+                 .default_value("reddit_comments.json"),
         )
         .arg(Arg::new("fields")
-                .short('f')
-                .long("fields")
-                .value_name("FIELDS")
-                .help("Sets the fields to search. Must be in the format <field>:<value>. Can be specified multiple times.")
-                .required(true)
-                .action(ArgAction::Set)
-                .num_args(1..)
+            .short('f')
+            .long("fields")
+            .value_name("FIELDS")
+            .help("Sets the fields to search. Must be in the format <field>:<value>. Can be specified multiple times.")
+            .required(true)
+            .action(ArgAction::Set)
+            .num_args(1..)
         )
         .arg(Arg::new("append")
-                .short('a')
-                .long("append")
-                .help("Append to the output file instead of overwriting it.")
-                .required(false)
-                .action(ArgAction::SetTrue),
+                 .short('a')
+                 .long("append")
+                 .help("Append to the output file instead of overwriting it.")
+                 .required(false)
+                 .action(ArgAction::SetTrue),
         )
         .arg(Arg::new("threads")
-                .short('t')
-                .long("threads")
-                .value_name("THREADS")
-                .help("Sets the number of threads to use. Defaults to the number of logical cores on the system.")
-                .required(false)
-                .num_args(1)
-                .action(ArgAction::Set)
-                .value_parser(value_parser!(usize)),
+                 .short('t')
+                 .long("threads")
+                 .value_name("THREADS")
+                 .help("Sets the number of threads to use. Defaults to the number of logical cores on the system.")
+                 .required(false)
+                 .num_args(1)
+                 .action(ArgAction::Set)
+                 .value_parser(value_parser!(usize)),
         ).arg(Arg::new("random")
-                .short('r')
-                .long("random")
-                .help("Randomly sample the input file. Useful for testing.")
-                .required(false)
-                .action(ArgAction::SetTrue),
-        ).arg(Arg::new("linecount")
-                .short('l')
-                .long("linecount")
-                .help("Print the number of lines in the input file and exit.")
-                .required(false)
-                .action(ArgAction::SetTrue),
-        ).get_matches();
+                  .short('r')
+                  .long("random")
+                  .help("Randomly sample the input file. Useful for testing.")
+                  .required(false)
+                  .action(ArgAction::SetTrue),
+    ).arg(Arg::new("linecount")
+              .short('l')
+              .long("linecount")
+              .help("Print the number of lines in the input file and exit.")
+              .required(false)
+              .action(ArgAction::SetTrue),
+    ).get_matches();
 
     // set the number of threads if "threads" argument is provided
-    if args.contains_id("threads") {
+    let threads_flag: usize = *args.get_one("threads").unwrap_or(&0);
+    if threads_flag > 0 {
         let threads = *args.get_one::<usize>("threads").unwrap();
         rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
     }
@@ -101,7 +103,8 @@ fn main() -> std::io::Result<()> {
     // estimates used in the progress bar. I've left it in because it might be useful for something
     // else in the future. Due to the bottleneck being the disk read speed, it'll take about the
     // same time as using the program normally.
-    if args.contains_id("linecount") {
+    let linecount_flag: bool = *args.get_one("linecount").unwrap_or(&false);
+    if linecount_flag {
         let input_path = args.get_one::<String>("input").unwrap().replace('\\', "/");
         let file_name = input_path.split('/').last().unwrap();
         let input_buf = PathBuf::from(input_path.clone());
@@ -117,6 +120,7 @@ fn main() -> std::io::Result<()> {
         println!("{};{};{}", file_name, metadata.len(), num_lines);
     }
 
+    //println!("reddit-search v{}", env!("CARGO_PKG_VERSION"));
 
     // this is a magic number that seems to work well
     const CHUNK_SIZE: usize = 500_000;
@@ -164,7 +168,7 @@ fn main() -> std::io::Result<()> {
         let value = split.next().unwrap().to_string();
         let formats = vec![
             format!("\"{}\":\"{}\"", field_key, value),
-            format!("\"{}\":{}", field_key, value)
+            format!("\"{}\":{}", field_key, value),
         ];
         search_strings.push(formats);
     }
@@ -215,7 +219,6 @@ fn main() -> std::io::Result<()> {
             writeln!(output_stream, "{}", line)?;
         }
         pb.inc(CHUNK_SIZE as u64)
-
     }
     pb.finish_and_clear();
     print!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, input_path);
