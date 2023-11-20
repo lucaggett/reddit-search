@@ -210,5 +210,15 @@ pub(crate) fn create_line_count_map() -> HashMap<&'static str, u64> {
         ("RC_2022-11.zst", 229478878),
         ("RC_2022-12.zst", 238862690),
     ].into_iter().collect()
+}
 
+// the presets are a hashmap of strings (preset names) mapping to vectors of values (the field strings to include)
+pub(crate) fn get_presets() -> HashMap<&'static str, Vec<&'static str>> {
+    HashMap::from([
+        ("en_news", vec!["subreddit:news", "subreddit:worldnews"]),
+        ("en_politics", vec!["subreddit:politics", "subreddit:PoliticalDiscussion", "subreddit:geopolitics", "subreddit:NeutralPolitics", "subreddit:Ask_Politics", "subreddit:PoliticalHumor", "subreddit:PoliticalCompassMemes", "subreddit:PoliticalMemes", "subreddit:PoliticalDiscussion", "subreddit:ShitPoliticsSay"]),
+        ("en_science", vec!["subreddit:science", "subreddit:EverythingScience", "subreddit:AskScience", "subreddit:EverythingScience"]),
+        ("en_hate_speech", vec!["subreddit:Physical_Removal", "subreddit:MillionDollarExtreme", "subreddit:GasTheKikes", "subreddit:FatPeopleHate", "subreddit:Beatingwomen", "subreddit:niggers", "subreddit:UncensoredNews"]),
+        ("controversial", vec!["controversiality:1"]),
+    ])
 }
