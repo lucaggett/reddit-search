@@ -96,8 +96,11 @@ fn main() -> std::io::Result<()> {
     if args.contains_id("threads") {
         let threads = *args.get_one::<usize>("threads").unwrap();
         rayon::ThreadPoolBuilder::new().num_threads(threads).build_global().unwrap();
-    } 
-
+    }
+    // this is mostly a utility function to get the number of lines in a file, used for creating the
+    // estimates used in the progress bar. I've left it in because it might be useful for something
+    // else in the future. Due to the bottleneck being the disk read speed, it'll take about the
+    // same time as using the program normally.
     if args.contains_id("linecount") {
         let input_path = args.get_one::<String>("input").unwrap().replace('\\', "/");
         let file_name = input_path.split('/').last().unwrap();
@@ -128,6 +131,13 @@ fn main() -> std::io::Result<()> {
     }
     let input_buf = PathBuf::from(input_path.clone());
     let metadata = input_buf.metadata()?;
+    // check if input file exists and is a file
+    if !metadata.is_file() {
+        let err_msg = format!("Input file {} does not exist.", input_path);
+        eprintln!("{}", err_msg);
+        return Ok(());
+    }
+
     let input_file = File::open(input_buf.clone())?;
     let mut decoder = Decoder::new(input_file)?;
     decoder.window_log_max(31)?;
