@@ -31,22 +31,24 @@ Get-ChildItem C:\path\to\dumps | ForEach-Object { reddit-search.exe --input $_.F
 
 Note that not all data contains all of these fields (for example, a comment from 2007 would not have the "gilded" field since that system was not implemented until later.)
 
+Boolean values are saved numerically (0 is false, 1 is true)
+
 | Field                   | Description |
 |-------------------------|-------------|
 | archived                | Boolean indicating if the item is archived |
 | id                      | Unique identifier of the item |
-| controversiality        | Numeric value representing the controversiality |
+| controversiality        | Boolean indicating if the item is controversial |
 | body                    | Text content of the item |
 | ups                     | Number of upvotes |
 | score_hidden            | Boolean indicating if the score is hidden |
 | edited                  | Boolean indicating if the item has been edited |
 | distinguished           | Status of the item (e.g., null, moderator) |
 | created_utc             | UTC timestamp of item creation |
-| name                    | Name of the item |
+| name                    | Another unique identifier (?) |
 | gilded                  | Number indicating how many times the item was gilded |
 | score                   | Total score of the item |
 | subreddit_id            | Identifier of the subreddit |
-| link_id                 | Identifier of the linked item |
+| link_id                 | Identifier of the link to the comment |
 | author_flair_text       | Text of the author's flair |
 | subreddit               | Name of the subreddit |
 | retrieved_on            | UTC timestamp of when the item was retrieved |
