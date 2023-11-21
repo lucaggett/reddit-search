@@ -27,6 +27,10 @@ for file in /path/to/dumps; do; reddit-search --append -i $file -o output.json -
 Get-ChildItem C:\path\to\dumps | ForEach-Object { reddit-search.exe --input $_.FullName -f KEY:DATA -o OUTPUT_FILENAME.json --append }
 ```
 
+# Descriptions of the fields contained within reddit dumps
+
+Note that not all data contains all of these fields (for example, a comment from 2007 would not have the "gilded" field since that system was not implemented until later.)
+
 | Field                   | Description |
 |-------------------------|-------------|
 | archived                | Boolean indicating if the item is archived |
