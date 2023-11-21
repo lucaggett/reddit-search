@@ -15,7 +15,6 @@ To see command line parameters, use reddit-search -h or --help
 reddit-search --input <input file path> --output <output file path> --fields <field:value> ...
 ```
 
-
 ## Iterating over the whole dataset
 
 ### Unix-like Shell (Bash, ZSH, etc)
@@ -25,5 +24,29 @@ for file in /path/to/dumps; do; reddit-search --append -i $file -o output.json -
 
 ### Powershell
 ```powershell
-Get-ChildItem C:\path\to\dumps | ForEach-Object { reddit-search.exe --input $_.FullName -f subreddit:schwiiz -o output_schwiiz_submissions.json --append }
+Get-ChildItem C:\path\to\dumps | ForEach-Object { reddit-search.exe --input $_.FullName -f KEY:DATA -o OUTPUT_FILENAME.json --append }
 ```
+
+| Field                   | Description |
+|-------------------------|-------------|
+| archived                | Boolean indicating if the item is archived |
+| id                      | Unique identifier of the item |
+| controversiality        | Numeric value representing the controversiality |
+| body                    | Text content of the item |
+| ups                     | Number of upvotes |
+| score_hidden            | Boolean indicating if the score is hidden |
+| edited                  | Boolean indicating if the item has been edited |
+| distinguished           | Status of the item (e.g., null, moderator) |
+| created_utc             | UTC timestamp of item creation |
+| name                    | Name of the item |
+| gilded                  | Number indicating how many times the item was gilded |
+| score                   | Total score of the item |
+| subreddit_id            | Identifier of the subreddit |
+| link_id                 | Identifier of the linked item |
+| author_flair_text       | Text of the author's flair |
+| subreddit               | Name of the subreddit |
+| retrieved_on            | UTC timestamp of when the item was retrieved |
+| parent_id               | Identifier of the parent item |
+| downs                   | Number of downvotes |
+| author_flair_css_class  | CSS class of the author's flair |
+| author                  | Name of the author |
