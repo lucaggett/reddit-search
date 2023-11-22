@@ -191,7 +191,7 @@ fn main() -> std::io::Result<()> {
     let input_path = args.get_one::<String>("input").unwrap().replace('\\', "/");
     // check that the input file is a zstd file
     if !input_path.ends_with(".zst") {
-        let err_msg = format!("Input file must be a zstd compressed file. {} is not a zstd file.", input_path);
+        let err_msg = format!("Input file must be a zstd compressed file and should follow the default naming convention for reddit dumps (RC/RS_YYYY_MM.zst). {} is not a valid filename.",  input_path);
         eprintln!("{}", err_msg);
         return Ok(());
     }
