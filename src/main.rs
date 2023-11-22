@@ -10,6 +10,7 @@ use clap::{Arg, ArgAction, Command, value_parser};
 use indicatif::{ProgressBar, ProgressStyle};
 use rayon::prelude::*;
 use std::fs::OpenOptions;
+use std::io;
 use std::string::String;
 use constants::create_line_count_map;
 
@@ -27,7 +28,6 @@ fn process_chunk(lines: Vec<String>, search_strings: &Vec<String>) -> Vec<String
         .filter_map(|line| process_line(&line, search_strings))
         .collect()
 }
-
 fn main() -> std::io::Result<()> {
     let args = Command::new("reddit-search")
         .about("Utility to search the pushshift.io reddit dumps. Takes a zstd compressed file as input and outputs matching lines to a file.\nFor processing multiple files, use the --append option and loop over the directory using your shell of choice\n\nThe dumps are available here: https://academictorrents.com/details/7c0645c94321311bb05bd879ddee4d0eba08aaee")
@@ -67,6 +67,15 @@ fn main() -> std::io::Result<()> {
                  .long("append")
                  .help("Append to the output file instead of overwriting it.")
                  .required(false)
+                 .conflicts_with("overwrite")
+                 .action(ArgAction::SetTrue),
+        )
+        .arg(Arg::new("overwrite")
+                 .short('w')
+                 .long("overwrite")
+                 .help("Overwrite the output file instead of appending to it.")
+                 .required(false)
+                 .conflicts_with("append")
                  .action(ArgAction::SetTrue),
         )
         .arg(Arg::new("threads")
@@ -78,33 +87,37 @@ fn main() -> std::io::Result<()> {
                  .num_args(1)
                  .action(ArgAction::Set)
                  .value_parser(value_parser!(usize)),
-        ).arg(Arg::new("random")
-                  .short('r')
-                  .long("random")
-                  .help("Randomly sample the input file. Useful for testing.")
-                  .required(false)
-                  .action(ArgAction::SetTrue),
-    ).arg(Arg::new("linecount")
-              .short('l')
-              .long("linecount")
-              .help("Print the number of lines in the input file and exit.")
-              .required(false)
-              .action(ArgAction::SetTrue),
-    ).arg(Arg::new("preset")
-              .short('p')
-              .long("preset")
-              .value_name("PRESET")
-              .help("Use a preset instead of specifying fields manually. Available presets are: en_news, en_politics, en_hate_speech")
-              .required_unless_present("fields")
-              .action(ArgAction::Set)
-              .num_args(1)
-    ).arg(Arg::new("verbose")
-              .short('v')
-              .long("verbose")
-              .help("Print verbose output.")
-              .required(false)
-              .action(ArgAction::SetTrue),
-    ).get_matches();
+        )
+        .arg(Arg::new("random")
+                 .short('r')
+                 .long("random")
+                 .help("Randomly sample the input file. Useful for testing.")
+                 .required(false)
+                 .action(ArgAction::SetTrue),
+        )
+        .arg(Arg::new("linecount")
+                 .short('l')
+                 .long("linecount")
+                 .help("Print the number of lines in the input file and exit.")
+                 .required(false)
+                 .action(ArgAction::SetTrue),
+        )
+        .arg(Arg::new("preset")
+            .short('p')
+            .long("preset")
+            .value_name("PRESET")
+            .help("Use a preset instead of specifying fields manually. Available presets are: en_news, en_politics, en_hate_speech")
+            .required_unless_present("fields")
+            .action(ArgAction::Set)
+            .num_args(1)
+        )
+        .arg(Arg::new("verbose")
+                 .short('v')
+                 .long("verbose")
+                 .help("Print verbose output.")
+                 .required(false)
+                 .action(ArgAction::SetTrue),
+        ).get_matches();
 
     // set the number of threads if "threads" argument is provided
     let threads_flag: usize = *args.get_one("threads").unwrap_or(&0);
@@ -198,12 +211,27 @@ fn main() -> std::io::Result<()> {
 
     let output_path = args.get_one::<String>("output").unwrap();
     // if the output file exists, exit with an error mentioning the --append option
-    if PathBuf::from(output_path).exists() && !args.contains_id("append") {
-        let err_msg = format!("Output file {} already exists. Use the --append option to append to the file.", output_path);
-        eprintln!("{}", err_msg);
+    let mut append_flag = *args.get_one("append").unwrap_or(&false);
+    let overwrite_flag = *args.get_one("overwrite").unwrap_or(&false);
+    if PathBuf::from(output_path).exists() && !append_flag && !overwrite_flag {
+        //let err_msg = format!("Output file {} already exists. Use --append or --overwrite", output_path);
+        //eprintln!("{}", err_msg);
+        eprint!("Enter 'a' to append to the file, 'o' to overwrite, or anything else to exit: ");
+        let mut user_input = String::new();
+        io::stdin()
+            .read_line(&mut user_input)
+            .expect("Failed to read line");
+        user_input = user_input.trim().to_string();
+        if user_input == "a" {
+            append_flag = true;
+        } else if user_input == "o" {
+            append_flag = false;
+        } else {
+            println!("Exiting");
+            return Ok(());
+        }
     }
     let output_buf = PathBuf::from(output_path);
-    let append_flag = *args.get_one("append").unwrap_or(&false);
     let output_file = OpenOptions::new()
         .create(true)
         .write(true)
