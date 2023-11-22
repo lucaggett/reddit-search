@@ -10,9 +10,9 @@ categories = ["command-line-utilities"]
 
 [dependencies]
 zstd = "0.13.0"
-clap = "4.3.24"
-indicatif = "0.17.5"
-rayon = "1.5.1"
+clap = "4.4.8"
+indicatif = "0.17.7"
+rayon = "1.8.0"
 num_cpus = "1.16.0"
 chrono = "0.4.31"
 
