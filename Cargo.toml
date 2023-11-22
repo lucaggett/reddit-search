@@ -9,7 +9,7 @@ repository = "https://github.com/lucaggett/reddit-search"
 categories = ["command-line-utilities"]
 
 [dependencies]
-zstd = "0.12.4"
+zstd = "0.13.0"
 clap = "4.3.24"
 indicatif = "0.17.5"
 rayon = "1.5.1"
