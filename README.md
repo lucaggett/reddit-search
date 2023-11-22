@@ -4,6 +4,7 @@ a tool for searching the pushshift reddit dumps written in rust. Available from 
 The dumps are available via torrent from here: https://academictorrents.com/details/7c0645c94321311bb05bd879ddee4d0eba08aaee
 
 a sample dump from january 2012 can be downloaded from IPFS at: https://ipfs.io/ipfs/QmTGmjq6jkXi7oVsT9vdMwNdnGimWUpB1YagpBRCZRDpdd?filename=RC_2012-01.zst
+**NOTE**: IPFS downloads may take a long time to start
 
 # usage
 To see command line parameters, use reddit-search -h or --help
