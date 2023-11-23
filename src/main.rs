@@ -216,7 +216,7 @@ fn main() -> std::io::Result<()> {
     if PathBuf::from(output_path).exists() && !append_flag && !overwrite_flag {
         //let err_msg = format!("Output file {} already exists. Use --append or --overwrite", output_path);
         //eprintln!("{}", err_msg);
-        eprint!("Enter 'a' to append to the file, 'o' to overwrite, or anything else to exit: ");
+        eprint!("File {} already exists. Enter 'a' to append to the file, 'o' to overwrite, or anything else to exit: ", output_path);
         let mut user_input = String::new();
         io::stdin()
             .read_line(&mut user_input)
