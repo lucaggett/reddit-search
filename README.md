@@ -1,6 +1,9 @@
 # reddit-search
 a tool for searching the pushshift reddit dumps written in rust. Available from crates.io via `cargo install reddit-search`
 
+if you do not have cargo or rustc, please follow the steps outlined in the official rust documentation:
+https://www.rust-lang.org/tools/install
+
 The dumps are available via torrent from here: https://academictorrents.com/details/7c0645c94321311bb05bd879ddee4d0eba08aaee
 
 # usage
