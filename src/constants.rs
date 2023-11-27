@@ -218,6 +218,6 @@ pub(crate) fn get_presets() -> HashMap<&'static str, Vec<&'static str>> {
         ("en_politics", vec!["subreddit:politics", "subreddit:PoliticalDiscussion", "subreddit:geopolitics", "subreddit:NeutralPolitics", "subreddit:Ask_Politics", "subreddit:PoliticalHumor", "subreddit:PoliticalCompassMemes", "subreddit:PoliticalMemes", "subreddit:PoliticalDiscussion", "subreddit:ShitPoliticsSay"]),
         ("en_science", vec!["subreddit:science", "subreddit:EverythingScience", "subreddit:AskScience", "subreddit:EverythingScience"]),
         ("en_hate_speech", vec!["subreddit:Physical_Removal", "subreddit:MillionDollarExtreme", "subreddit:GasTheKikes", "subreddit:FatPeopleHate", "subreddit:Beatingwomen", "subreddit:niggers", "subreddit:UncensoredNews"]),
-        ("controversial", vec!["controversiality:1", "score"]),
+        ("controversial", vec!["controversiality:1"]),
     ])
 }
