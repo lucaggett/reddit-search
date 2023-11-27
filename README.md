@@ -13,17 +13,22 @@ To see command line parameters, use reddit-search -h or --help
 reddit-search --input <input file path> --output <output file path> --fields <field:value> ...
 ```
 
-## Iterating over the whole dataset
+## Presets
 
-### Unix-like Shell (Bash, ZSH, etc)
-```sh
-for file in /path/to/dumps; do; reddit-search --append -i $file -o output.json -f field:value; done
-```
+### Presets for Search Tool
 
-### Powershell
-```powershell
-Get-ChildItem C:\path\to\dumps | ForEach-Object { reddit-search.exe --input $_.FullName -f KEY:DATA -o OUTPUT_FILENAME.json --append }
-```
+The search tool includes a variety of presets, which are pre-defined collections of field strings tailored to specific content areas. These presets can be utilized to streamline searches within the tool. Below is a table outlining the current presets available:
+
+| Preset Name       | Description                                                              |
+|-------------------|--------------------------------------------------------------------------|
+| `en_news`         | Subreddits focused on global and regional news and current events.       |
+| `en_politics`     | A range of subreddits covering various political discussions, humor, and memes, including general politics and specific political orientations. |
+| `en_science`      | Subreddits dedicated to general science, scientific inquiries, and discussions on scientific advancements. |
+| `en_hate_speech`  | Subreddits known for promoting hate speech and controversial content.    |
+| `controversial`   | Content with high levels of controversy across various themes.           |
+
+Each preset is a collection of filters designed to target specific thematic areas on the platform, enabling users to tailor their searches according to their interests or research needs.
+
 
 # Descriptions of the fields contained within reddit dumps
 
