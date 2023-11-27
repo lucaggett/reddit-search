@@ -149,8 +149,8 @@ fn main() -> std::io::Result<()> {
     }
     let pb = ProgressBar::new(num_lines);
     pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})").expect("Failed to set progress bar style")
-        .progress_chars("#>-"));
+        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} | {percent}% | {eta} left").expect("Failed to set progress bar style")
+        .progress_chars("=> "));
 
 
     for chunk in rx {
@@ -160,7 +160,7 @@ fn main() -> std::io::Result<()> {
         for line in matches {
             writeln!(output_stream, "{}", line)?;
         }
-        pb.inc(CHUNK_SIZE as u64)
+        pb.inc(CHUNK_SIZE as u64);
     }
     pb.finish_and_clear();
     print!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, args.input);

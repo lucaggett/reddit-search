@@ -1,6 +1,6 @@
 [package]
 name = "reddit-search"
-version = "0.7.5"
+version = "0.7.6"
 edition = "2021"
 authors = ["Luc Aggett <luc@aggett.com>"]
 description = "A search tool for the pushshift.io Reddit dumps."
