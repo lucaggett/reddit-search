@@ -15,10 +15,6 @@ reddit-search --input <input file path> --output <output file path> --fields <fi
 
 ## Presets
 
-### Presets for Search Tool
-
-The search tool includes a variety of presets, which are pre-defined collections of field strings tailored to specific content areas. These presets can be utilized to streamline searches within the tool. Below is a table outlining the current presets available:
-
 | Preset Name       | Description                                                              |
 |-------------------|--------------------------------------------------------------------------|
 | `en_news`         | Subreddits focused on global and regional news and current events.       |
@@ -27,7 +23,7 @@ The search tool includes a variety of presets, which are pre-defined collections
 | `en_hate_speech`  | Subreddits known for promoting hate speech and controversial content.    |
 | `controversial`   | Content with high levels of controversy across various themes.           |
 
-Each preset is a collection of filters designed to target specific thematic areas on the platform, enabling users to tailor their searches according to their interests or research needs.
+Each preset is a collection of filters designed to target specific themes. Should you be interested in using this and would like additional filters to be added, do not hesitate to contact me.
 
 
 # Descriptions of the fields contained within reddit dumps
