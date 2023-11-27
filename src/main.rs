@@ -47,7 +47,6 @@ fn main() -> std::io::Result<()> {
         search_fields = arguments::get_preset_fields(&args.preset.unwrap()).unwrap();
     } else {
         let args_fields: Vec<&str> = args.fields.as_ref().unwrap().iter().map(|s| s.as_str()).collect();
-        println!("{:?}", args_fields);
         search_fields = args_fields.iter().map(|s| s.to_string()).collect();
     }
 
@@ -139,7 +138,7 @@ fn main() -> std::io::Result<()> {
 
     let mut matched_lines_count = 0;
     let line_count_map = create_line_count_map();
-    let file_name = args.input.split('/').last().unwrap();:wq
+    let file_name = args.input.split('/').last().unwrap();
     let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
     if num_lines == 0 {
         println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
