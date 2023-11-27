@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 // these values were pre-calculated to make the progress bar more accurate.
 // precomputed values only exist for the reddit dataset as linked in the repo/help text.
 pub(crate) fn create_line_count_map() -> HashMap<&'static str, u64> {
