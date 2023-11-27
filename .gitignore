@@ -1,14 +1,20 @@
+# Rust
 /target
+Cargo.lock
+
+# ignore .DS_Store files (goddamnit apple)
+.DS_STORE
+
+# Buenzli Data
 /sg_comments
 /reddit_dumps
 output.json
+
+# IntelliJ
 /.idea
-Cargo.lock
-.DS_STORE
-src/main.singlethreaded
-src/main.multithreaded
-out.log
-flamegraph.svg
+
+# random file types that I don't want to commit
+*.svg
 *.json
 *.txt
-RC_*.zst
+*.zst
