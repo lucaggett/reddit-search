@@ -18,3 +18,4 @@ output.json
 *.json
 *.txt
 *.zst
+src/main.singlethreaded
