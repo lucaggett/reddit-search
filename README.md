@@ -58,3 +58,8 @@ Boolean values are saved numerically (0 is false, 1 is true)
 | downs                   | Number of downvotes |
 | author_flair_css_class  | CSS class of the author's flair |
 | author                  | Name of the author |
+
+
+# Versioning
+
+Older versions of the program can be downloaded using version overrides with cargo. Tags are not carried over to github.
