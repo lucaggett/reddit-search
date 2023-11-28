@@ -24,7 +24,6 @@ pub struct CommandLineArgs {
     pub fields: Option<Vec<String>>,
     pub append: bool,
     pub overwrite: bool,
-    pub threads: usize,
     pub random: bool,
     pub linecount: bool,
     pub preset: Option<String>,
@@ -82,16 +81,6 @@ impl CommandLineArgs {
                      .conflicts_with("append")
                      .action(ArgAction::SetTrue),
             )
-            .arg(Arg::new("threads")
-                     .short('t')
-                     .long("threads")
-                     .value_name("THREADS")
-                     .help("Sets the number of threads to use. Defaults to the number of logical cores on the system.")
-                     .required(false)
-                     .num_args(1)
-                     .action(ArgAction::Set)
-                     .value_parser(value_parser!(usize)),
-            )
             .arg(Arg::new("random")
                      .short('r')
                      .long("random")
@@ -141,7 +130,6 @@ impl CommandLineArgs {
 
         let append = *args.get_one("append").unwrap_or(&false);
         let overwrite = *args.get_one("overwrite").unwrap_or(&false);
-        let threads = *args.get_one("threads").unwrap_or(&num_cpus::get());
         let random = *args.get_one("random").unwrap_or(&false);
         let linecount = *args.get_one("linecount").unwrap_or(&false);
         let preset = args.get_one::<String>("preset").cloned();
@@ -153,7 +141,6 @@ impl CommandLineArgs {
             fields,
             append,
             overwrite,
-            threads,
             random,
             linecount,
             preset,
