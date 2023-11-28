@@ -17,29 +17,30 @@ use constants::create_line_count_map;
 use crate::arguments::CommandLineArgs;
 
 
+// this is mostly a utility function to get the number of lines in a file, used for creating the
+// estimates used in the progress bar. I've left it in because it might be useful for something
+// else in the future. Due to the bottleneck being the disk read speed, it'll take about the
+// same time as using the program normally.
+fn count_lines(file_name: &str) -> u64 {
+    let input_buf = PathBuf::from(file_name);
+    let metadata = input_buf.metadata().unwrap();
+    let input_file = File::open(input_buf).unwrap();
+    let mut decoder = Decoder::new(input_file).unwrap();
+    decoder.window_log_max(31).unwrap();
+    let input_stream = BufReader::new(decoder);
+    let mut num_lines = 0;
+    for _ in input_stream.lines() {
+        num_lines += 1;
+    }
+    println!("{};{};{}", file_name, metadata.len(), num_lines);
+    num_lines
+}
+
 fn main() -> std::io::Result<()> {
     let mut args = CommandLineArgs::new().unwrap();
-    if args.threads > 0 {
-        rayon::ThreadPoolBuilder::new().num_threads(args.threads).build_global().unwrap();
-    }
-    // this is mostly a utility function to get the number of lines in a file, used for creating the
-    // estimates used in the progress bar. I've left it in because it might be useful for something
-    // else in the future. Due to the bottleneck being the disk read speed, it'll take about the
-    // same time as using the program normally.
-
     if args.linecount {
-        let file_name = args.input.split('/').last().unwrap();
-        let input_buf = PathBuf::from(args.input.clone());
-        let metadata = input_buf.metadata()?;
-        let input_file = File::open(input_buf.clone())?;
-        let mut decoder = Decoder::new(input_file)?;
-        decoder.window_log_max(31)?;
-        let input_stream = BufReader::new(decoder);
-        let mut num_lines = 0;
-        for _ in input_stream.lines() {
-            num_lines += 1;
-        }
-        println!("{};{};{}", file_name, metadata.len(), num_lines);
+        count_lines(&args.input);
+        return Ok(());
     }
 
     let search_fields: Vec<String>;
@@ -61,12 +62,18 @@ fn main() -> std::io::Result<()> {
         }
         let field_key = split.next().unwrap().to_string();
         let value = split.next().unwrap().to_string();
-        search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
-        search_strings.push(format!("\"{}\":{}", field_key, value));
+        // if the value is an integer, a boolean or null do not add quotes
+        if value.parse::<i64>().is_ok() || value == "true" || value == "false" || value == "null" {
+            search_strings.push(format!("\"{}\":{}", field_key, value));
+            continue;
+        } else {
+            // otherwise, add quotes
+            search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
+        }
     }
 
     // this is a magic number that seems to work well
-    const CHUNK_SIZE: usize = 500_000;
+    const CHUNK_SIZE: usize = 100_000;
 
     let input_buf = PathBuf::from(args.input.clone());
     let metadata = input_buf.metadata()?;
