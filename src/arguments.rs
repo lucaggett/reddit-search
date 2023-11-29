@@ -23,6 +23,7 @@ pub struct CommandLineArgs {
     pub output: String,
     pub fields: Option<Vec<String>>,
     pub append: bool,
+    pub chunk_size: usize,
     pub overwrite: bool,
     pub random: bool,
     pub linecount: bool,
@@ -61,6 +62,7 @@ impl CommandLineArgs {
                 .value_name("FIELDS")
                 .help("Sets the fields to search. Must be in the format <field>:<value>. Can be specified multiple times.")
                 .required_unless_present("preset")
+                .required_unless_present("linecount")
                 .action(ArgAction::Set)
                 .value_parser(value_parser!(String))
                 .num_args(1..)
@@ -101,9 +103,19 @@ impl CommandLineArgs {
                 .value_name("PRESET")
                 .help("Use a preset instead of specifying fields manually. Available presets are: en_news, en_politics, en_hate_speech")
                 .required_unless_present("fields")
+                .required_unless_present("linecount")
                 .action(ArgAction::Set)
                 .num_args(1)
-            )
+            ).arg(Arg::new("chunk-size")
+                      .short('c')
+                      .long("chunk-size")
+                      .value_name("CHUNK_SIZE")
+                      .help("Sets the chunk size to use when searching. Defaults to 100,000.")
+                      .required(false)
+                      .action(ArgAction::Set)
+                      .value_parser(value_parser!(usize))
+                      .default_value("100000"),
+        )
             .arg(Arg::new("verbose")
                      .short('v')
                      .long("verbose")
@@ -131,6 +143,7 @@ impl CommandLineArgs {
         let append = *args.get_one("append").unwrap_or(&false);
         let overwrite = *args.get_one("overwrite").unwrap_or(&false);
         let random = *args.get_one("random").unwrap_or(&false);
+        let chunk_size = *args.get_one("chunk-size").unwrap_or(&100_000);
         let linecount = *args.get_one("linecount").unwrap_or(&false);
         let preset = args.get_one::<String>("preset").cloned();
         let verbose = *args.get_one("verbose").unwrap_or(&false);
@@ -141,6 +154,7 @@ impl CommandLineArgs {
             fields,
             append,
             overwrite,
+            chunk_size,
             random,
             linecount,
             preset,

@@ -72,8 +72,6 @@ fn main() -> std::io::Result<()> {
         }
     }
 
-    // this is a magic number that seems to work well
-    const CHUNK_SIZE: usize = 100_000;
 
     let input_buf = PathBuf::from(args.input.clone());
     let metadata = input_buf.metadata()?;
@@ -127,14 +125,14 @@ fn main() -> std::io::Result<()> {
     let (tx, rx) = std::sync::mpsc::channel();
 
     rayon::spawn(move || {
-        let mut chunk = Vec::with_capacity(CHUNK_SIZE);
+        let mut chunk = Vec::with_capacity(args.chunk_size);
         for line in input_stream.lines() {
             let line = line.expect("Failed to read line");
             chunk.push(line);
 
-            if chunk.len() >= CHUNK_SIZE {
+            if chunk.len() >= args.chunk_size {
                 tx.send(chunk).expect("Failed to send chunk");
-                chunk = Vec::with_capacity(CHUNK_SIZE);
+                chunk = Vec::with_capacity(args.chunk_size);
             }
         }
 
@@ -166,7 +164,7 @@ fn main() -> std::io::Result<()> {
         for line in matches {
             writeln!(output_stream, "{}", line)?;
         }
-        pb.inc(CHUNK_SIZE as u64);
+        pb.inc(args.chunk_size as u64);
     }
     pb.finish_and_clear();
     print!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, args.input);
