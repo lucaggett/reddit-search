@@ -20,3 +20,5 @@ output.json
 *.txt
 *.zst
 src/main.singlethreaded
+build_x86.sh
+submission_totals
