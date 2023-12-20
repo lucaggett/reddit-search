@@ -34,7 +34,7 @@ pub struct CommandLineArgs {
 impl CommandLineArgs {
     pub fn new() -> Result<Self, String> {
         let args = Command::new("reddit-search")
-            .about("Utility to search the pushshift.io reddit dumps. Takes a zstd compressed file as input and outputs matching lines to a file. \n\nThe dumps are available here: https://academictorrents.com/details/7c0645c94321311bb05bd879ddee4d0eba08aaee")
+            .about("Utility to search the pushshift.io reddit dumps. Takes a zstd compressed file as input and outputs matching lines to a file. \n\nThe dumps are available here: https://academictorrents.com/details/7c0645c94321311bb05bd879ddee4d0eba08aaee\n\nNote: Due to performance constraints, backreferences and lookaround assertions are not supported.")
             .version(env!("CARGO_PKG_VERSION"))
             .author("Luc Aggett (luc@aggett.com")
             .arg_required_else_help(true)
@@ -60,7 +60,7 @@ impl CommandLineArgs {
                 .short('f')
                 .long("fields")
                 .value_name("FIELDS")
-                .help("Sets the fields to search. Must be in the format <field>:<value>. Can be specified multiple times.")
+                .help("Sets the fields to search. Must be in the format <field>:<regex>. Can be specified multiple times.")
                 .required_unless_present("preset")
                 .required_unless_present("linecount")
                 .action(ArgAction::Set)
