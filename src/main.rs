@@ -4,6 +4,7 @@ mod arguments;
 
 extern crate num_cpus;
 
+use crate::arguments::CommandLineArgs;
 use crate::line_processing::process_chunk;
 use std::fs::File;
 use std::path::PathBuf;
@@ -14,14 +15,14 @@ use std::fs::OpenOptions;
 use std::io;
 use std::string::String;
 use constants::create_line_count_map;
-use crate::arguments::CommandLineArgs;
+use rayon::ThreadPoolBuilder;
 
 
 // this is mostly a utility function to get the number of lines in a file, used for creating the
 // estimates used in the progress bar. I've left it in because it might be useful for something
 // else in the future. Due to the bottleneck being the disk read speed, it'll take about the
 // same time as using the program normally.
-fn count_lines(file_name: &str) -> u64 {
+fn count_lines(file_name: &str) -> () {
     let input_buf = PathBuf::from(file_name);
     let metadata = input_buf.metadata().unwrap();
     let input_file = File::open(input_buf).unwrap();
@@ -32,12 +33,16 @@ fn count_lines(file_name: &str) -> u64 {
     for _ in input_stream.lines() {
         num_lines += 1;
     }
+    
     println!("{};{};{}", file_name, metadata.len(), num_lines);
-    num_lines
 }
 
 fn main() -> std::io::Result<()> {
     let mut args = CommandLineArgs::new().unwrap();
+
+    // set the number of threads to use
+    ThreadPoolBuilder::new().num_threads(args.threads).build_global().unwrap();
+
     if args.linecount {
         count_lines(&args.input);
         return Ok(());
@@ -119,11 +124,32 @@ fn main() -> std::io::Result<()> {
         println!("Threads: {}", rayon::current_num_threads());
         println!("Line count: {}", metadata.len());
         println!("Search fields: {}", search_strings.join(", "));
+        println!("Chunk size: {}", args.chunk_size);
     }
+
+
+    let mut matched_lines_count = 0;
+    let line_count_map = create_line_count_map();
+    let file_name = args.input.split('/').last().unwrap();
+    let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
+    if num_lines == 0 {
+        println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
+        // estimate the number of lines as approximately 10,000,000 per GB
+        let estimated_num_lines = (metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0;
+        num_lines = estimated_num_lines as u64;
+    }
+    let pb = ProgressBar::new(num_lines);
+    pb.set_style(ProgressStyle::default_bar()
+        .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} | {percent}% | {eta} left").expect("Failed to set progress bar style")
+        .progress_chars("=> "));
+
+
 
     let mut output_stream = BufWriter::new(output_file);
     let (tx, rx) = std::sync::mpsc::channel();
 
+
+    // spawn threads to read the input file and send chunks to the main thread
     rayon::spawn(move || {
         let mut chunk = Vec::with_capacity(args.chunk_size);
         for line in input_stream.lines() {
@@ -141,22 +167,7 @@ fn main() -> std::io::Result<()> {
         }
     });
 
-    let mut matched_lines_count = 0;
-    let line_count_map = create_line_count_map();
-    let file_name = args.input.split('/').last().unwrap();
-    let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
-    if num_lines == 0 {
-        println!("Warning: No line count found for {}. This will cause the progress percent to be inaccurate.", file_name);
-        // estimate the number of lines as approximately 10,000,000 per GB
-        let estimated_num_lines = (metadata.len() as f64 / 1_000_000_000.0) * 10_000_000.0;
-        num_lines = estimated_num_lines as u64;
-    }
-    let pb = ProgressBar::new(num_lines);
-    pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} | {percent}% | {eta} left").expect("Failed to set progress bar style")
-        .progress_chars("=> "));
-
-
+    // process the chunks and write the matches to the output file
     for chunk in rx {
         let matches = process_chunk(chunk, &search_strings);
         matched_lines_count += matches.len();
@@ -166,6 +177,9 @@ fn main() -> std::io::Result<()> {
         }
         pb.inc(args.chunk_size as u64);
     }
+
+
+
     pb.finish_and_clear();
     print!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, args.input);
     if pb.elapsed().as_secs() > 60 {

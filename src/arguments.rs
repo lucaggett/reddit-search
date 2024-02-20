@@ -1,13 +1,21 @@
 extern crate clap;
 
-use clap::{Arg, ArgAction, Command, value_parser};
 use crate::constants::get_presets;
+use clap::{value_parser, Arg, ArgAction, Command};
 
 pub fn get_preset_fields(preset: &str) -> Option<Vec<String>> {
     let presets_map = get_presets();
     // check if the preset exists
     if !presets_map.contains_key(preset) {
-        let err_msg = format!("Preset {} not found. Available presets are: {}", preset, presets_map.keys().map(|s| s.to_string()).collect::<Vec<String>>().join(", "));
+        let err_msg = format!(
+            "Preset {} not found. Available presets are: {}",
+            preset,
+            presets_map
+                .keys()
+                .map(|s| s.to_string())
+                .collect::<Vec<String>>()
+                .join(", ")
+        );
         eprintln!("{}", err_msg);
         return None;
     }
@@ -29,6 +37,7 @@ pub struct CommandLineArgs {
     pub linecount: bool,
     pub preset: Option<String>,
     pub verbose: bool,
+    pub threads: usize,
 }
 
 impl CommandLineArgs {
@@ -106,59 +115,56 @@ impl CommandLineArgs {
                 .required_unless_present("linecount")
                 .action(ArgAction::Set)
                 .num_args(1)
-            ).arg(Arg::new("chunk-size")
-                      .short('c')
-                      .long("chunk-size")
-                      .value_name("CHUNK_SIZE")
-                      .help("Sets the chunk size to use when searching. Defaults to 100,000.")
-                      .required(false)
-                      .action(ArgAction::Set)
-                      .value_parser(value_parser!(usize))
-                      .default_value("100000"),
-        )
+            )
+            .arg(Arg::new("chunk-size")
+                     .short('c')
+                     .long("chunk-size")
+                     .value_name("CHUNK_SIZE")
+                     .help("Sets the chunk size to use when searching. Defaults to 100,000.")
+                     .required(false)
+                     .action(ArgAction::Set)
+                     .value_parser(value_parser!(usize))
+                     .default_value("100000"),
+            )
             .arg(Arg::new("verbose")
                      .short('v')
                      .long("verbose")
                      .help("Print verbose output.")
                      .required(false)
                      .action(ArgAction::SetTrue),
-            ).get_matches();
+            )
+            .arg(Arg::new("threads")
+                .short('t')
+                .long("threads")
+                .value_name("THREADS")
+                .help("Sets the number of threads to use. Defaults to half the number of logical cores or 3, whichever is lower.")
+                .required(false)
+                .action(ArgAction::Set)
+                .value_parser(value_parser!(usize)))
+            .get_matches();
 
         // Extract values from args
-        let input = args.get_one::<String>("input")
-            .ok_or("Input file argument missing")?
-            // fix windows-style paths
-            .replace("\\", "/")
-            .to_owned();
-
-        let output = args.get_one::<String>("output")
-            .ok_or("Output file argument missing")?
-            // fix windows-style paths
-            .replace("\\", "/")
-            .to_owned();
-
-        let fields = Some(args.get_many::<String>("fields")
-            .map_or_else(Vec::new, |values| values.map(|s| s.to_string()).collect()));
-
-        let append = *args.get_one("append").unwrap_or(&false);
-        let overwrite = *args.get_one("overwrite").unwrap_or(&false);
-        let random = *args.get_one("random").unwrap_or(&false);
-        let chunk_size = *args.get_one("chunk-size").unwrap_or(&100_000);
-        let linecount = *args.get_one("linecount").unwrap_or(&false);
-        let preset = args.get_one::<String>("preset").cloned();
-        let verbose = *args.get_one("verbose").unwrap_or(&false);
-
         Ok(Self {
-            input,
-            output,
-            fields,
-            append,
-            overwrite,
-            chunk_size,
-            random,
-            linecount,
-            preset,
-            verbose,
+            input: args
+                .get_one::<String>("input")
+                .ok_or("Input file argument missing")?
+                .replace("\\", "/"),
+            output: args
+                .get_one::<String>("output")
+                .ok_or("Output file argument missing")?
+                .replace("\\", "/"),
+            fields: Some(
+                args.get_many::<String>("fields")
+                    .map_or_else(Vec::new, |values| values.map(ToString::to_string).collect()),
+            ),
+            append: *args.get_one("append").unwrap_or(&false),
+            overwrite: *args.get_one("overwrite").unwrap_or(&false),
+            random: *args.get_one("random").unwrap_or(&false),
+            chunk_size: *args.get_one("chunk-size").unwrap_or(&100_000),
+            linecount: *args.get_one("linecount").unwrap_or(&false),
+            preset: args.get_one::<String>("preset").cloned(),
+            verbose: *args.get_one("verbose").unwrap_or(&false),
+            threads: *args.get_one::<usize>("threads").unwrap_or(&3),
         })
     }
 }
