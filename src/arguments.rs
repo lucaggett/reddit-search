@@ -164,7 +164,7 @@ impl CommandLineArgs {
             linecount: *args.get_one("linecount").unwrap_or(&false),
             preset: args.get_one::<String>("preset").cloned(),
             verbose: *args.get_one("verbose").unwrap_or(&false),
-            threads: *args.get_one::<usize>("threads").unwrap_or(&3),
+            threads: *args.get_one::<usize>("threads").unwrap_or(&num_cpus::get()),
         })
     }
 }
