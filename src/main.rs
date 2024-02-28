@@ -1,22 +1,21 @@
+mod arguments;
 mod constants;
 mod line_processing;
-mod arguments;
 
 extern crate num_cpus;
 
 use crate::arguments::CommandLineArgs;
 use crate::line_processing::process_chunk;
-use std::fs::File;
-use std::path::PathBuf;
-use zstd::Decoder;
-use std::io::{BufRead, BufReader, Write, BufWriter};
+use constants::create_line_count_map;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::ThreadPoolBuilder;
+use std::fs::File;
 use std::fs::OpenOptions;
 use std::io;
+use std::io::{BufRead, BufReader, BufWriter, Write};
+use std::path::PathBuf;
 use std::string::String;
-use constants::create_line_count_map;
-use rayon::ThreadPoolBuilder;
-
+use zstd::Decoder;
 
 // this is mostly a utility function to get the number of lines in a file, used for creating the
 // estimates used in the progress bar. I've left it in because it might be useful for something
@@ -33,7 +32,7 @@ fn count_lines(file_name: &str) -> () {
     for _ in input_stream.lines() {
         num_lines += 1;
     }
-    
+
     println!("{};{};{}", file_name, metadata.len(), num_lines);
 }
 
@@ -41,7 +40,10 @@ fn main() -> std::io::Result<()> {
     let mut args = CommandLineArgs::new().unwrap();
 
     // set the number of threads to use
-    ThreadPoolBuilder::new().num_threads(args.threads).build_global().unwrap();
+    ThreadPoolBuilder::new()
+        .num_threads(args.threads)
+        .build_global()
+        .unwrap();
 
     if args.linecount {
         count_lines(&args.input);
@@ -52,7 +54,13 @@ fn main() -> std::io::Result<()> {
     if args.preset.is_some() {
         search_fields = arguments::get_preset_fields(&args.preset.unwrap()).unwrap();
     } else {
-        let args_fields: Vec<&str> = args.fields.as_ref().unwrap().iter().map(|s| s.as_str()).collect();
+        let args_fields: Vec<&str> = args
+            .fields
+            .as_ref()
+            .unwrap()
+            .iter()
+            .map(|s| s.as_str())
+            .collect();
         search_fields = args_fields.iter().map(|s| s.to_string()).collect();
     }
 
@@ -70,13 +78,13 @@ fn main() -> std::io::Result<()> {
         // if the value is an integer, a boolean or null do not add quotes
         if value.parse::<i64>().is_ok() || value == "true" || value == "false" || value == "null" {
             search_strings.push(format!("\"{}\":{}", field_key, value));
+            search_strings.push(format!("\"{}\": {}", field_key, value));
             continue;
         } else {
             // otherwise, add quotes
             search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
         }
     }
-
 
     let input_buf = PathBuf::from(args.input.clone());
     let metadata = input_buf.metadata()?;
@@ -117,7 +125,12 @@ fn main() -> std::io::Result<()> {
 
     // if the debug flag is set, print some general info
     if args.verbose {
-        println!("Starting reddit-search for {} ({} threads) at {}", args.input, rayon::current_num_threads(), chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
+        println!(
+            "Starting reddit-search for {} ({} threads) at {}",
+            args.input,
+            rayon::current_num_threads(),
+            chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
+        );
         println!("Input file: {}", args.input);
         println!("Output file: {}", args.output);
         println!("Append: {}", args.append);
@@ -126,7 +139,6 @@ fn main() -> std::io::Result<()> {
         println!("Search fields: {}", search_strings.join(", "));
         println!("Chunk size: {}", args.chunk_size);
     }
-
 
     let mut matched_lines_count = 0;
     let line_count_map = create_line_count_map();
@@ -139,15 +151,17 @@ fn main() -> std::io::Result<()> {
         num_lines = estimated_num_lines as u64;
     }
     let pb = ProgressBar::new(num_lines);
-    pb.set_style(ProgressStyle::default_bar()
-        .template("[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} | {percent}% | {eta} left").expect("Failed to set progress bar style")
-        .progress_chars("=> "));
-
-
+    pb.set_style(
+        ProgressStyle::default_bar()
+            .template(
+                "[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} | {percent}% | {eta} left",
+            )
+            .expect("Failed to set progress bar style")
+            .progress_chars("=> "),
+    );
 
     let mut output_stream = BufWriter::new(output_file);
     let (tx, rx) = std::sync::mpsc::channel();
-
 
     // spawn threads to read the input file and send chunks to the main thread
     rayon::spawn(move || {
@@ -178,15 +192,24 @@ fn main() -> std::io::Result<()> {
         pb.inc(args.chunk_size as u64);
     }
 
-
-
     pb.finish_and_clear();
-    print!("Matched {} lines out of {} in file {}", matched_lines_count, num_lines, args.input);
+    print!(
+        "Matched {} lines out of {} in file {}",
+        matched_lines_count, num_lines, args.input
+    );
     if pb.elapsed().as_secs() > 60 {
         if pb.elapsed().as_secs() > 120 {
-            println!(" (took {} minutes, {} seconds)", pb.elapsed().as_secs() / 60, pb.elapsed().as_secs() % 60)
+            println!(
+                " (took {} minutes, {} seconds)",
+                pb.elapsed().as_secs() / 60,
+                pb.elapsed().as_secs() % 60
+            )
         } else {
-            println!(" (took {} minute, {} seconds)", pb.elapsed().as_secs() / 60, pb.elapsed().as_secs() % 60)
+            println!(
+                " (took {} minute, {} seconds)",
+                pb.elapsed().as_secs() / 60,
+                pb.elapsed().as_secs() % 60
+            )
         }
     } else {
         println!(" (took {} seconds)", pb.elapsed().as_secs());
