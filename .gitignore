@@ -14,11 +14,11 @@ output.json
 # IntelliJ
 /.idea
 
-# random file types that I don't want to commit
+# local data
 *.svg
 *.json
 *.txt
 *.zst
-src/main.singlethreaded
+
+# shell scripts
 build_x86.sh
-submission_totals
