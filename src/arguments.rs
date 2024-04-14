@@ -147,11 +147,11 @@ impl CommandLineArgs {
         Ok(Self {
             input: args
                 .get_one::<String>("input")
-                .ok_or("Input file argument missing")?
+                .ok_or("Failed to parse input path, double check the arguments")?
                 .replace("\\", "/"),
             output: args
                 .get_one::<String>("output")
-                .ok_or("Output file argument missing")?
+                .ok_or("Failed to parse output path, double check the arguments")?
                 .replace("\\", "/"),
             fields: Some(
                 args.get_many::<String>("fields")
