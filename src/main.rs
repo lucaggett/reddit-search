@@ -28,10 +28,7 @@ fn count_lines(file_name: &str) -> () {
     let mut decoder = Decoder::new(input_file).unwrap();
     decoder.window_log_max(31).unwrap();
     let input_stream = BufReader::new(decoder);
-    let mut num_lines = 0;
-    for _ in input_stream.lines() {
-        num_lines += 1;
-    }
+    let num_lines = input_stream.lines().count();
 
     println!("{};{};{}", file_name, metadata.len(), num_lines);
 }
@@ -61,7 +58,10 @@ fn main() -> std::io::Result<()> {
             .iter()
             .map(|s| s.as_str())
             .collect();
-        search_fields = args_fields.iter().map(|s| s.to_string()).collect();
+        search_fields = args_fields
+            .iter()
+            .map(|s| s.to_string().to_lowercase())
+            .collect();
     }
 
     let mut search_strings: Vec<String> = Vec::new();
@@ -154,7 +154,7 @@ fn main() -> std::io::Result<()> {
     pb.set_style(
         ProgressStyle::default_bar()
             .template(
-                "[{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} | {percent}% | {eta} left",
+                "[{elapsed_precise}] [{bar:40.cyan/blue}] {human_pos}/{human_len} | {percent}% | {eta} left",
             )
             .expect("Failed to set progress bar style")
             .progress_chars("=> "),
@@ -185,7 +185,6 @@ fn main() -> std::io::Result<()> {
     for chunk in rx {
         let matches = process_chunk(chunk, &search_strings);
         matched_lines_count += matches.len();
-
         for line in matches {
             writeln!(output_stream, "{}", line)?;
         }
