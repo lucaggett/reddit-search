@@ -8,6 +8,7 @@ use crate::arguments::CommandLineArgs;
 use crate::line_processing::process_chunk;
 use constants::create_line_count_map;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use rayon::ThreadPoolBuilder;
 use std::fs::File;
 use std::fs::OpenOptions;
@@ -31,6 +32,17 @@ fn count_lines(file_name: &str) -> () {
     let num_lines = input_stream.lines().count();
 
     println!("{};{};{}", file_name, metadata.len(), num_lines);
+}
+
+fn get_output_stream(output_file: &str, append: bool) -> io::Result<BufWriter<File>> {
+    let output_buf = PathBuf::from(output_file);
+    let output_file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(append)
+        .open(output_buf)?;
+    let output_stream = BufWriter::new(output_file);
+    Ok(output_stream)
 }
 
 fn main() -> std::io::Result<()> {
@@ -116,13 +128,6 @@ fn main() -> std::io::Result<()> {
             return Ok(());
         }
     }
-    let output_buf = PathBuf::from(args.output.clone());
-    let output_file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(args.append)
-        .open(output_buf)?;
-
     // if the debug flag is set, print some general info
     if args.verbose {
         println!(
@@ -140,7 +145,7 @@ fn main() -> std::io::Result<()> {
         println!("Chunk size: {}", args.chunk_size);
     }
 
-    let mut matched_lines_count = 0;
+    //let mut matched_lines_count = 0;
     let line_count_map = create_line_count_map();
     let file_name = args.input.split('/').last().unwrap();
     let mut num_lines = *line_count_map.get(file_name).unwrap_or(&0);
@@ -160,7 +165,6 @@ fn main() -> std::io::Result<()> {
             .progress_chars("=> "),
     );
 
-    let mut output_stream = BufWriter::new(output_file);
     let (tx, rx) = std::sync::mpsc::channel();
 
     // spawn threads to read the input file and send chunks to the main thread
@@ -180,16 +184,22 @@ fn main() -> std::io::Result<()> {
             tx.send(chunk).expect("Failed to send final chunk");
         }
     });
-
-    // process the chunks and write the matches to the output file
-    for chunk in rx {
-        let matches = process_chunk(chunk, &search_strings);
-        matched_lines_count += matches.len();
-        for line in matches {
-            writeln!(output_stream, "{}", line)?;
-        }
-        pb.inc(args.chunk_size as u64);
-    }
+    // Refactored for parallel processing on decoding
+    let matched_lines_count: usize = rx
+        .into_iter()
+        .par_bridge()
+        .map(|chunk| {
+            let mut output_stream =
+                get_output_stream(&args.output, args.append).expect("Failed to get output stream");
+            let matches = process_chunk(chunk, &search_strings);
+            let matched_lines_count = matches.len();
+            for line in matches {
+                writeln!(output_stream, "{}", line).expect("Failed to write line");
+            }
+            pb.inc(args.chunk_size as u64);
+            matched_lines_count
+        })
+        .sum();
 
     pb.finish_and_clear();
     print!(
