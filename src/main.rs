@@ -62,10 +62,6 @@ fn main() -> std::io::Result<()> {
             .iter()
             .map(|s| s.to_string().to_lowercase())
             .collect();
-    } else {
-        let err_msg = "No search fields provided. Use the --fields flag or a preset.";
-        eprintln!("{}", err_msg);
-        return Ok(());
     }
 
     let mut search_strings: Vec<String> = Vec::new();
@@ -96,8 +92,13 @@ fn main() -> std::io::Result<()> {
             }
         }
     }
-
+    // check if the input file exists
     let input_buf = PathBuf::from(args.input.clone());
+    if !input_buf.exists() {
+        let err_msg = format!("Input file {} does not exist.", args.input);
+        eprintln!("{}", err_msg);
+        return Ok(());
+    }
     let metadata = input_buf.metadata()?;
     // check if input file exists and is a file
     if !metadata.is_file() {
