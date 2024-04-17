@@ -50,17 +50,13 @@ fn main() -> std::io::Result<()> {
     let search_fields: Vec<String>;
     if args.preset.is_some() {
         search_fields = arguments::get_preset_fields(&args.preset.unwrap()).unwrap();
-    } else if args.fields.is_some() {
-        let args_fields: Vec<&str> = args
+    } else { // if the preset is not set, we can assume that the fields are set
+        search_fields = args
             .fields
             .as_ref()
             .unwrap()
             .iter()
-            .map(|s| s.as_str())
-            .collect();
-        search_fields = args_fields
-            .iter()
-            .map(|s| s.to_string().to_lowercase())
+            .map(|s| s.to_string())
             .collect();
     }
 
@@ -73,8 +69,9 @@ fn main() -> std::io::Result<()> {
             eprintln!("{}", err_msg);
             return Ok(());
         }
-        let field_key = split.next().unwrap().to_string();
-        let value = split.next().unwrap().to_string();
+        let field_key = split.next().unwrap().to_lowercase();
+        let value = split.next().unwrap().to_lowercase();
+        println!("Field key: {}, value: {}", field_key, value);
         // if the value is an integer, a boolean or null do not add quotes
         if value.parse::<i64>().is_ok() || value == "true" || value == "false" || value == "null" {
             if args.input.starts_with("RC_2023") {
