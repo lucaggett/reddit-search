@@ -9,13 +9,13 @@ repository = "https://github.com/lucaggett/reddit-search"
 categories = ["command-line-utilities"]
 
 [dependencies]
-zstd = "0.13.0"
-clap = "4.4.8"
-indicatif = "0.17.7"
-rayon = "1.8.0"
+zstd = "0.13.1"
+clap = "4.5.4"
+indicatif = "0.17.8"
+rayon = "1.10.0"
 num_cpus = "1.16.0"
-chrono = "0.4.31"
-assert_cmd = "2.0.12"
+chrono = "0.4.38"
+assert_cmd = "2.0.14"
 
 
 [profile.release]
