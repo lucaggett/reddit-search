@@ -71,7 +71,6 @@ fn main() -> std::io::Result<()> {
         }
         let field_key = split.next().unwrap().to_lowercase();
         let value = split.next().unwrap().to_lowercase();
-        println!("Field key: {}, value: {}", field_key, value);
         // if the value is an integer, a boolean or null do not add quotes
         if value.parse::<i64>().is_ok() || value == "true" || value == "false" || value == "null" {
             if args.input.starts_with("RC_2023") {
