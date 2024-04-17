@@ -123,11 +123,19 @@ fn main() -> std::io::Result<()> {
             return Ok(());
         }
     }
+    // if append is false (i.e. overwrite) and the file exists, empty it
+    if !args.append && PathBuf::from(args.output.clone()).exists() {
+        let mut output_file = OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .open(args.output.clone())?;
+        output_file.write_all(b"")?;
+    }
     let output_buf = PathBuf::from(args.output.clone());
     let output_file = OpenOptions::new()
         .create(true)
         .write(true)
-        .append(args.append)
+        .append(true)
         .open(output_buf)?;
 
     // if the debug flag is set, print some general info
