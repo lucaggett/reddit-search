@@ -50,7 +50,7 @@ fn main() -> std::io::Result<()> {
     let search_fields: Vec<String>;
     if args.preset.is_some() {
         search_fields = arguments::get_preset_fields(&args.preset.unwrap()).unwrap();
-    } else {
+    } else if args.fields.is_some() {
         let args_fields: Vec<&str> = args
             .fields
             .as_ref()
@@ -62,6 +62,10 @@ fn main() -> std::io::Result<()> {
             .iter()
             .map(|s| s.to_string().to_lowercase())
             .collect();
+    } else {
+        let err_msg = "No search fields provided. Use the --fields flag or a preset.";
+        eprintln!("{}", err_msg);
+        return Ok(());
     }
 
     let mut search_strings: Vec<String> = Vec::new();
