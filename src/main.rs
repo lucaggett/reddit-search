@@ -62,6 +62,8 @@ fn main() -> std::io::Result<()> {
     let search_fields: Vec<String>;
     if args.preset.is_some() {
         search_fields = arguments::get_preset_fields(&args.preset.unwrap()).unwrap();
+        // lowercase all the fields
+        search_fields = search_fields.iter().map(|s| s.to_lowercase()).collect();
     } else {
         let args_fields: Vec<&str> = args
             .fields
@@ -95,6 +97,7 @@ fn main() -> std::io::Result<()> {
         } else {
             // otherwise, add quotes
             search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
+            search_strings.push(format!("\"{}\": \"{}\"", field_key, value));
         }
     }
 
