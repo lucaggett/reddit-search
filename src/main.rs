@@ -62,8 +62,6 @@ fn main() -> std::io::Result<()> {
     let search_fields: Vec<String>;
     if args.preset.is_some() {
         search_fields = arguments::get_preset_fields(&args.preset.unwrap()).unwrap();
-        // lowercase all the fields
-        search_fields = search_fields.iter().map(|s| s.to_lowercase()).collect();
     } else {
         let args_fields: Vec<&str> = args
             .fields
@@ -91,13 +89,19 @@ fn main() -> std::io::Result<()> {
         let value = split.next().unwrap().to_string();
         // if the value is an integer, a boolean or null do not add quotes
         if value.parse::<i64>().is_ok() || value == "true" || value == "false" || value == "null" {
-            search_strings.push(format!("\"{}\":{}", field_key, value));
-            search_strings.push(format!("\"{}\": {}", field_key, value));
+            if args.input.starts_with("RC_2023") {
+                search_strings.push(format!("\"{}\": {}", field_key, value));
+            } else {
+                search_strings.push(format!("\"{}\":{}", field_key, value));
+            }
             continue;
         } else {
             // otherwise, add quotes
-            search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
-            search_strings.push(format!("\"{}\": \"{}\"", field_key, value));
+            if args.input.starts_with("RC_2023") {
+                search_strings.push(format!("\"{}\": \"{}\"", field_key, value));
+            } else {
+                search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
+            }
         }
     }
 
