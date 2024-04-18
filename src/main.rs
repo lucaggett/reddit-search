@@ -50,7 +50,8 @@ fn main() -> std::io::Result<()> {
     let search_fields: Vec<String>;
     if args.preset.is_some() {
         search_fields = arguments::get_preset_fields(&args.preset.unwrap()).unwrap();
-    } else { // if the preset is not set, we can assume that the fields are set
+    } else {
+        // if the preset is not set, we can assume that the fields are set
         search_fields = args
             .fields
             .as_ref()
@@ -73,19 +74,12 @@ fn main() -> std::io::Result<()> {
         let value = split.next().unwrap().to_lowercase();
         // if the value is an integer, a boolean or null do not add quotes
         if value.parse::<i64>().is_ok() || value == "true" || value == "false" || value == "null" {
-            if args.input.starts_with("RC_2023") {
-                search_strings.push(format!("\"{}\": {}", field_key, value));
-            } else {
-                search_strings.push(format!("\"{}\":{}", field_key, value));
-            }
-            continue;
+            search_strings.push(format!("\"{}\": {}", field_key, value));
+            search_strings.push(format!("\"{}\":{}", field_key, value));
         } else {
             // otherwise, add quotes
-            if args.input.starts_with("RC_2023") {
-                search_strings.push(format!("\"{}\": \"{}\"", field_key, value));
-            } else {
-                search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
-            }
+            search_strings.push(format!("\"{}\": \"{}\"", field_key, value));
+            search_strings.push(format!("\"{}\":\"{}\"", field_key, value));
         }
     }
     // check if the input file exists
