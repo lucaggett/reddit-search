@@ -66,5 +66,5 @@ Older versions of the program can be downloaded using version overrides with car
 
 ## Disclaimer
 
-"reddit-search" is an independent open-source tool designed for searching Zstandard (zst) dumps from Reddit. It is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Reddit, Inc. The use of the Reddit name and any related trademarks in this project is purely for descriptive purposes. The trademarks and product names belong to their respective owners, who are not affiliated with, do not endorse, and do not sponsor "reddit-search". This project is developed under the principles of fair use and open source collaboration.
+"reddit-search" is an independent open-source tool designed for searching Zstandard (zst) dumps of Reddit posts and comments. It is not affiliated, associated, authorized, endorsed by, or in any way officially connected with Reddit, Inc. The use of the Reddit name and any related trademarks in this project is purely for descriptive purposes. The trademarks and product names belong to their respective owners, who are not affiliated with, do not endorse, and do not sponsor "reddit-search". This project is developed under the principles of fair use and open source collaboration.
 
