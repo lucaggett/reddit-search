@@ -1,6 +1,6 @@
 [package]
 name = "reddit-search"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2021"
 authors = ["Luc Aggett <luc@aggett.com>"]
 description = "A search tool for the pushshift.io Reddit dumps."
@@ -12,9 +12,9 @@ categories = ["command-line-utilities"]
 zstd = "0.13.1"
 clap = "4.5.4"
 indicatif = "0.17.8"
-rayon = "1.10.0"
-num_cpus = "1.16.0"
 chrono = "0.4.38"
+aho-corasick = "1.1"
+memchr = "2.7"
 assert_cmd = "2.0.14"
 
 

@@ -31,9 +31,7 @@ pub struct CommandLineArgs {
     pub output: String,
     pub fields: Option<Vec<String>>,
     pub append: bool,
-    pub chunk_size: usize,
     pub overwrite: bool,
-    pub random: bool,
     pub linecount: bool,
     pub preset: Option<String>,
     pub verbose: bool,
@@ -92,13 +90,6 @@ impl CommandLineArgs {
                      .conflicts_with("append")
                      .action(ArgAction::SetTrue),
             )
-            .arg(Arg::new("random")
-                     .short('r')
-                     .long("random")
-                     .help("Randomly sample the input file. Useful for testing.")
-                     .required(false)
-                     .action(ArgAction::SetTrue),
-            )
             .arg(Arg::new("linecount")
                      .short('l')
                      .long("linecount")
@@ -115,16 +106,6 @@ impl CommandLineArgs {
                 .required_unless_present("linecount")
                 .action(ArgAction::Set)
                 .num_args(1)
-            )
-            .arg(Arg::new("chunk-size")
-                     .short('c')
-                     .long("chunk-size")
-                     .value_name("CHUNK_SIZE")
-                     .help("Sets the chunk size to use when searching. Defaults to 100,000.")
-                     .required(false)
-                     .action(ArgAction::Set)
-                     .value_parser(value_parser!(usize))
-                     .default_value("100000"),
             )
             .arg(Arg::new("verbose")
                      .short('v')
@@ -159,12 +140,17 @@ impl CommandLineArgs {
             ),
             append: *args.get_one("append").unwrap_or(&false),
             overwrite: *args.get_one("overwrite").unwrap_or(&false),
-            random: *args.get_one("random").unwrap_or(&false),
-            chunk_size: *args.get_one("chunk-size").unwrap_or(&100_000),
             linecount: *args.get_one("linecount").unwrap_or(&false),
             preset: args.get_one::<String>("preset").cloned(),
             verbose: *args.get_one("verbose").unwrap_or(&false),
-            threads: *args.get_one::<usize>("threads").unwrap_or(&num_cpus::get()),
+            threads: args
+                .get_one::<usize>("threads")
+                .copied()
+                .unwrap_or_else(|| {
+                    std::thread::available_parallelism()
+                        .map(usize::from)
+                        .unwrap_or(1)
+                }),
         })
     }
 }
